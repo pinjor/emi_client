@@ -65,15 +65,48 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Button: Apply Restrictions
+        // Button: Apply Restrictions (now functional)
         findViewById<Button>(R.id.btnRestrict).setOnClickListener {
-            Toast.makeText(this, "Restrictions require Device Owner mode", Toast.LENGTH_SHORT).show()
+            if (deviceManager.isDeviceOwner()) {
+                deviceManager.applyRestrictions()
+                Toast.makeText(this, "Restrictions applied", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "Restrictions require Device Owner mode", Toast.LENGTH_SHORT).show()
+            }
         }
 
-        // Button: Clear Restrictions
+        // Button: Clear Restrictions (now functional)
         findViewById<Button>(R.id.btnClear).setOnClickListener {
-            Toast.makeText(this, "Restrictions require Device Owner mode", Toast.LENGTH_SHORT).show()
+            if (deviceManager.isDeviceOwner()) {
+                deviceManager.clearRestrictions()
+                Toast.makeText(this, "Restrictions cleared", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "Restrictions require Device Owner mode", Toast.LENGTH_SHORT).show()
+            }
         }
+
+        // Button: Lock Google Account (FRP ON)
+        findViewById<Button>(R.id.btnFrpLock).setOnClickListener {
+            if (deviceManager.isDeviceOwner()) {
+                deviceManager.enforceFrpProtection(true)
+                Toast.makeText(this, "FRP Lock applied", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "Device Owner required", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+// Button: Unlock Google Account (FRP OFF)
+        findViewById<Button>(R.id.btnFrpUnlock).setOnClickListener {
+            if (deviceManager.isDeviceOwner()) {
+                deviceManager.enforceFrpProtection(false)
+                Toast.makeText(this, "FRP Lock removed (account changes allowed)", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "Device Owner required", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+
+
 
         // 🔹 NEW: Show LockScreen (test Phase 4)
         findViewById<Button>(R.id.btnShowLockScreen).setOnClickListener {

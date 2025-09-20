@@ -1,10 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <device-admin xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-policies>
+        <!-- Allows the app to set and enforce password requirements. -->
         <limit-password />
+        <!-- Enables the app to monitor failed password attempts. -->
         <watch-login />
+        <!-- Grants the ability to change the user's password. -->
         <reset-password />
+        <!-- Allows the app to immediately lock the device's screen. -->
         <force-lock />
+        <!-- Grants the ability to remotely perform a factory reset. -->
         <wipe-data />
+        <!-- Enables the app to set a password expiration timeout. -->
+        <expire-password />
+        <!-- Enforces full-disk encryption on the device. -->
+        <encrypted-storage />
+        <!-- Allows the app to disable the device's camera. -->
+        <disable-camera />
+        <!-- Allows the app to disable keyguard features like widgets and notifications. -->
+        <disable-keyguard-features />
     </uses-policies>
 </device-admin>

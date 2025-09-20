@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Emi Locker Client</string>
+    <string name="welcome_string">Welcome to EmiLocker!</string>
+    <string name="app_description">EMI client locker in dev mode for proper testing.</string>
 </resources>

@@ -6,48 +6,81 @@
     android:orientation="vertical"
     android:padding="20dp">
 
+    <TextView
+        android:id="@+id/tvWelcome"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:text="@string/welcome_string"
+        android:textSize="24sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tvAppDescription"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        android:text="@string/app_description"
+        android:textAlignment="center" />
+
     <Button
         android:id="@+id/btnEnableAdmin"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Enable Device Admin"
-        android:layout_marginTop="16dp" />
+        android:layout_marginTop="16dp"
+        android:text="Enable Device Admin" />
 
     <Button
         android:id="@+id/btnLock"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Lock Device (DPM only)"
-        android:layout_marginTop="16dp" />
+        android:layout_marginTop="16dp"
+        android:text="Lock Device (DPM only)" />
 
     <Button
         android:id="@+id/btnRestrict"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Apply Restrictions"
-        android:layout_marginTop="16dp" />
+        android:layout_marginTop="16dp"
+        android:text="Apply Restrictions" />
+
+
+    <Button
+        android:id="@+id/btnFrpLock"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="FRP Lock (Disable Google Account Removal)" />
+
+    <Button
+        android:id="@+id/btnFrpUnlock"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="FRP Unlock (Allow Account Changes)" />
+
 
     <Button
         android:id="@+id/btnClear"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Clear Restrictions"
-        android:layout_marginTop="16dp" />
+        android:layout_marginTop="16dp"
+        android:text="Clear Restrictions" />
 
     <!-- 🔹 Test LockScreen -->
     <Button
         android:id="@+id/btnShowLockScreen"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Show LockScreen (Test)"
-        android:layout_marginTop="16dp" />
+        android:layout_marginTop="16dp"
+        android:text="Show LockScreen (Test)" />
 
     <!-- 🔹 Test Unlock -->
     <Button
         android:id="@+id/btnClearLockScreen"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Clear LockScreen (Test)"
-        android:layout_marginTop="16dp" />
+        android:layout_marginTop="16dp"
+        android:text="Clear LockScreen (Test)" />
 
 </LinearLayout>
