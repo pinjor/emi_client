@@ -14,6 +14,7 @@ import androidx.work.WorkManager
 import com.example.emilockerclient.admin.EmiAdminReceiver
 import com.example.emilockerclient.managers.DeviceControlManager
 import com.example.emilockerclient.workers.HeartbeatWorker
+import com.example.emilockerclient.workers.OfflineCheckWorker
 import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
@@ -38,6 +39,17 @@ class MainActivity : AppCompatActivity() {
             androidx.work.ExistingPeriodicWorkPolicy.UPDATE,
             heartbeatRequest
         )
+
+        // 🔹 Offline check every 1 hour
+        val offlineCheckRequest =
+            PeriodicWorkRequestBuilder<OfflineCheckWorker>(1, TimeUnit.HOURS).build()
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "offlineCheckWork",
+            androidx.work.ExistingPeriodicWorkPolicy.UPDATE,
+            offlineCheckRequest
+        )
+
+
 
         // 🔹 One immediate heartbeat on app start
         val oneTimeHeartbeat = OneTimeWorkRequestBuilder<HeartbeatWorker>().build()

@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
 import android.widget.Button
@@ -27,39 +28,46 @@ class LockScreenActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Make activity full screen + stay on top
-        window.addFlags(
-            WindowManager.LayoutParams.FLAG_FULLSCREEN or
+        // Modern API to show above lock screen and turn screen on
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+                setShowWhenLocked(true)
+                setTurnScreenOn(true)
+                // requestDismissKeyguard is not called because we intentionally want to block normal keyguard
+            } else {
+                window.addFlags(
                     WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-                    WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
-                    WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
-        )
+                            WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+                )
+            }
+
+            // Keep display and block user from sleeping the app
+            window.addFlags(
+                WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+            )
+        } catch (_: Exception) {
+            // ignore
+        }
 
         setContentView(R.layout.activity_lock_screen)
 
         // Read lock message
-        val message = intent.getStringExtra("LOCK_MESSAGE")
-            ?: PrefsHelper.getLockMessage(this)
-
+        val message = intent.getStringExtra("LOCK_MESSAGE") ?: PrefsHelper.getLockMessage(this)
         findViewById<TextView>(R.id.tvLockMessage).text = message
 
         // Emergency dial button
         findViewById<Button>(R.id.btnEmergency).setOnClickListener {
-            val dial = Intent(Intent.ACTION_DIAL, Uri.parse("tel:112"))
+            val dial = Intent(Intent.ACTION_DIAL, Uri.parse("tel:999"))
             startActivity(dial)
         }
 
-        // Register unlock receiver (must specify flag for Android 13+)
-        registerReceiver(
-            unlockReceiver,
-            IntentFilter(UNLOCK_ACTION),
-            RECEIVER_NOT_EXPORTED
-        )
+        // Register unlock receiver (explicitly exported false in manifest; use local receiver)
+        registerReceiver(unlockReceiver, IntentFilter(UNLOCK_ACTION), RECEIVER_NOT_EXPORTED)
 
-        // Disable back gesture + button
+        // Disable system back by consuming it
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                // Do nothing (block back)
+                // blocked
             }
         })
     }

@@ -1,6 +1,5 @@
 package com.example.emilockerclient.utils
 
-
 import android.content.Context
 import android.content.SharedPreferences
 
@@ -8,6 +7,7 @@ object PrefsHelper {
     private const val PREFS_NAME = "emi_prefs"
     private const val KEY_LOCKED = "locked"
     private const val KEY_LOCK_MSG = "lock_message"
+    private const val KEY_LAST_HEARTBEAT = "last_heartbeat"
 
     private fun prefs(context: Context): SharedPreferences =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -25,6 +25,17 @@ object PrefsHelper {
     }
 
     fun getLockMessage(context: Context): String {
-        return prefs(context).getString(KEY_LOCK_MSG, "Your EMI payment is overdue. Contact seller.") ?: ""
+        return prefs(context).getString(
+            KEY_LOCK_MSG,
+            "Your EMI payment is overdue. Contact seller."
+        ) ?: ""
+    }
+
+    fun setLastHeartbeatTime(context: Context, time: Long) {
+        prefs(context).edit().putLong(KEY_LAST_HEARTBEAT, time).apply()
+    }
+
+    fun getLastHeartbeatTime(context: Context): Long {
+        return prefs(context).getLong(KEY_LAST_HEARTBEAT, 0L)
     }
 }

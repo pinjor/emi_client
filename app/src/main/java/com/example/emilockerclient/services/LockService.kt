@@ -1,6 +1,5 @@
 package com.example.emilockerclient.services
 
-
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -25,17 +24,27 @@ class LockService : Service() {
         super.onCreate()
         Log.i("LockService", "onCreate()")
 
-        // create channel and foreground notification
         createNotificationChannel()
-        val notification: Notification = Notification.Builder(this, CHANNEL_ID)
-            .setContentTitle("EMI Locker")
-            .setContentText("Monitoring device lock state")
-            .setSmallIcon(R.mipmap.ic_launcher) // use existing app icon, replace if you have custom
-            .build()
 
+        val notification: Notification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Notification.Builder(this, CHANNEL_ID)
+                .setContentTitle("EMI Locker")
+                .setContentText("Monitoring device lock state")
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setOngoing(true)
+                .build()
+        } else {
+            Notification.Builder(this)
+                .setContentTitle("EMI Locker")
+                .setContentText("Monitoring device lock state")
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .build()
+        }
+
+        // startForeground must always run on API26+ when using startForegroundService
         startForeground(NOTIF_ID, notification)
 
-        // If locked before reboot -> open LockScreenActivity
+        // If locked before reboot -> open LockScreenActivity (best-effort)
         try {
             if (PrefsHelper.isLocked(this)) {
                 val message = PrefsHelper.getLockMessage(this)
@@ -52,7 +61,7 @@ class LockService : Service() {
             Log.w("LockService", "Failed to start LockScreenActivity from service: ${e.message}")
         }
 
-        // stop service after job is done (we used it only to open UI)
+        // stop self; this service only ensures the UI is launched after boot
         stopSelf()
     }
 
