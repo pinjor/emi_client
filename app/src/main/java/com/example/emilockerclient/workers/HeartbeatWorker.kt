@@ -44,10 +44,10 @@ class HeartbeatWorker(appContext: Context, workerParams: WorkerParameters) :
                 PrefsHelper.setLastHeartbeatTime(context, System.currentTimeMillis())
 
                 // ✅ Handle server command if present
-                body?.command?.let { cmd ->
-                    Log.i("HeartbeatWorker", "Server command received: ${cmd.type}")
-                    CommandHandler.handle(applicationContext, cmd)
-                }
+//                body?.command?.let { cmd ->
+//                    Log.i("HeartbeatWorker", "Server command received: ${cmd.type}")
+//                    CommandHandler.handle(applicationContext, cmd)
+//                }
                 Result.success()
             } else {
                 Log.w("HeartbeatWorker", "Heartbeat failed: HTTP ${resp.code()}")

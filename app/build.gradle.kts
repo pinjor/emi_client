@@ -34,24 +34,26 @@ android {
         jvmTarget = "11"
     }
 }
-val workVersionWorkRuntime = "2.10.4"
+val workVersion = "2.10.0"
+val retrofitVersion = "2.11.0"
+val okHttpVersion = "5.1.0"
 
 dependencies {
-    // Retrofit already present; add OkHttp logging if not
-    implementation("com.squareup.okhttp3:logging-interceptor:5.1.0")
+    // WorkManager
+    implementation("androidx.work:work-runtime-ktx:$workVersion")
+
+    // Retrofit + Gson
+    implementation("com.squareup.retrofit2:retrofit:$retrofitVersion")
+    implementation("com.squareup.retrofit2:converter-gson:$retrofitVersion")
+
+    // OkHttp logging
+    implementation("com.squareup.okhttp3:logging-interceptor:$okHttpVersion")
 
     // Firebase
     implementation(platform("com.google.firebase:firebase-bom:34.3.0"))
-    implementation("com.google.firebase:firebase-messaging-ktx")
+    implementation("com.google.firebase:firebase-messaging")
 
-    // WorkManager
-    //noinspection GradleDependency
-    implementation("androidx.work:work-runtime-ktx:$workVersionWorkRuntime")
-
-    // Retrofit + Gson
-    implementation("com.squareup.retrofit2:retrofit:3.0.0") // <-- 3.0.0 doesn’t exist!
-    implementation("com.squareup.retrofit2:converter-gson:3.0.0")
-
+    // AndroidX core libs
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
