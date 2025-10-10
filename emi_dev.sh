@@ -3,6 +3,26 @@ PKG="com.example.emilockerclient"
 ADMIN=".admin.EmiAdminReceiver"
 APK="./app-debug.apk"   # adjust path if needed
 
+### some important commands:
+# for setting up device owner:
+# adb shell dpm set-device-owner com.example.emilockerclient/.admin.EmiAdminReceiver
+
+# for removing device owner:
+# adb shell dpm remove-active-admin com.example.emilockerclient/.admin.EmiAdminReceiver
+
+# for installing the app:
+# adb install -t -r app/build/outputs/apk/debug/app-debug.apk
+
+# for uninstalling the app:
+# adb uninstall com.example.emilockerclient
+
+# for checking device owner status:
+# adb shell dumpsys device_policy | grep "Device Owner"
+
+# for checking app permissions:
+# adb shell pm list permissions -g -d -u | grep com.example.emilockerclient
+
+
 case "$1" in
   install)
     # ❯ adb install -t -r app/build/outputs/apk/debug/app-debug.apk
@@ -37,4 +57,3 @@ case "$1" in
     echo "Usage: $0 {install|owner|remove-owner|uninstall|cycle}"
     ;;
 esac
-

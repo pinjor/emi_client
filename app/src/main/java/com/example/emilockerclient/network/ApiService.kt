@@ -2,51 +2,61 @@ package com.example.emilockerclient.network
 
 import retrofit2.Call
 import retrofit2.http.Body
-import retrofit2.http.Header
 import retrofit2.http.POST
 
-data class RegisterRequest(
-    val deviceId: String,
-    val model: String,
-    val imei: String? = null,
-    val simSerial: String? = null,
-    val orderId: String? = null
-)
-data class RegisterResponse(val success: Boolean, val message: String, val deviceToken: String? = null)
+// -------------------------------
+// ✅ Request/Response Models
+// -------------------------------
 
-data class HeartbeatRequest(
-    val deviceId: String,
-    val imei: String?,
-    val simSerial: String?,
-    val model: String,
-    val isLocked: Boolean,
-    val timestamp: Long
-)
-data class HeartbeatResponse(
-    val success: Boolean,
-    val message: String,
-    val command: ServerCommand? = null // server may include immediate command to execute
+// Device registration payload
+data class DeviceRegisterRequest(
+    val serial_number: String,
+    val imei1: String,
+    val fcm_token: String
 )
 
+// Standard response structure (you can adjust if backend returns different fields)
+
+// Generic command structure for FCM and server responses
 data class ServerCommand(
-    val type: String, // e.g. "LOCK_DEVICE", "UNLOCK_DEVICE", "SHOW_MESSAGE"
+    val command: String,  // e.g. "lock", "unlock", "disable-camera"
     val payload: Map<String, String>? = null
 )
 
-data class CommandAckRequest(val deviceId: String, val commandType: String, val status: String)
+// Optional command acknowledgment (if server expects one)
+data class CommandAckRequest(
+    val serial_number: String,
+    val command: String,
+    val status: String // e.g. "SUCCESS" / "FAILED"
+)
 
-data class FcmTokenRegisterRequest(val deviceId: String, val fcmToken: String)
+
+// Retrofit API interface
 
 interface ApiService {
-    @POST("device/register")
-    fun registerDevice(@Body req: RegisterRequest): Call<RegisterResponse>
 
-    @POST("device/heartbeat")
-    fun sendHeartbeat(@Body req: HeartbeatRequest): Call<HeartbeatResponse>
+    // Register the device with serial, imei, and FCM token
+    @POST("devices/register")
+    fun registerDevice(@Body req: DeviceRegisterRequest): Call<DeviceRegistrationResponse>
 
-    @POST("device/commandAck")
-    fun ackCommand(@Body req: CommandAckRequest): Call<RegisterResponse>
+    // Command endpoints (invoked dynamically when receiving FCM commands)
+    @POST("devices/command/lock")
+    fun lockDevice(): Call<ApiResponse>
 
-    @POST("device/registerFcm")
-    fun registerFcm(@Body req: FcmTokenRegisterRequest): Call<RegisterResponse>
+    @POST("devices/command/unlock")
+    fun unlockDevice(): Call<ApiResponse>
+
+    @POST("devices/command/disable-camera")
+    fun disableCamera(): Call<ApiResponse>
+
+    @POST("devices/command/enable-camera")
+    fun enableCamera(): Call<ApiResponse>
+
+    @POST("devices/command/disable-bluetooth")
+    fun disableBluetooth(): Call<ApiResponse>
+
+    // Optional: acknowledge command execution
+    @POST("devices/command/ack")
+    fun ackCommand(@Body req: CommandAckRequest): Call<ApiResponse>
 }
+

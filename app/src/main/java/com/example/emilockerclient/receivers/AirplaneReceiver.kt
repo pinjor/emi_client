@@ -17,8 +17,8 @@ class AirplaneReceiver : BroadcastReceiver() {
                 manager.showLockScreen("⚠️ Airplane Mode enabled! Device locked.")
 
                 // ✅ Trigger immediate heartbeat/alert
-                androidx.work.WorkManager.getInstance(context)
-                    .enqueue(androidx.work.OneTimeWorkRequestBuilder<com.example.emilockerclient.workers.HeartbeatWorker>().build())
+//                androidx.work.WorkManager.getInstance(context)
+//                    .enqueue(androidx.work.OneTimeWorkRequestBuilder<com.example.emilockerclient.workers.HeartbeatWorker>().build())
 
 
             }

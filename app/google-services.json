@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1007088200329",
+    "project_id": "ime-locker-app",
+    "storage_bucket": "ime-locker-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1007088200329:android:d119e0f26be09e43fff458",
+        "android_client_info": {
+          "package_name": "com.example.emilockerclient"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC6piYp_X-yDHmadimmGfr03rRq9W3EJHg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

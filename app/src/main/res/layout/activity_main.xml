@@ -1,86 +1,114 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/main"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:gravity="center"
-    android:orientation="vertical"
-    android:padding="20dp">
+    android:fillViewport="true">
 
-    <TextView
-        android:id="@+id/tvWelcome"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:text="@string/welcome_string"
-        android:textSize="24sp"
-        android:textStyle="bold" />
-
-    <TextView
-        android:id="@+id/tvAppDescription"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="24dp"
-        android:text="@string/app_description"
-        android:textAlignment="center" />
-
-    <Button
-        android:id="@+id/btnEnableAdmin"
+    <LinearLayout
+        android:id="@+id/main"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="Enable Device Admin" />
+        android:gravity="center"
+        android:orientation="vertical"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="20dp"
+        android:paddingTop="50dp"> <!-- 🔹 Added top padding -->
 
-    <Button
-        android:id="@+id/btnLock"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="Lock Device (DPM only)" />
+        <TextView
+            android:id="@+id/tvWelcome"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="@string/welcome_string"
+            android:textSize="24sp"
+            android:textStyle="bold" />
 
-    <Button
-        android:id="@+id/btnRestrict"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="Apply Restrictions" />
+        <TextView
+            android:id="@+id/tvAppDescription"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            android:text="@string/app_description"
+            android:textAlignment="center" />
 
+        <Button
+            android:id="@+id/btnEnableAdmin"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Enable Device Admin" />
 
-    <Button
-        android:id="@+id/btnFrpLock"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="FRP Lock (Disable Google Account Removal)" />
+        <Button
+            android:id="@+id/btnLock"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Lock Device (DPM only)" />
 
-    <Button
-        android:id="@+id/btnFrpUnlock"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="FRP Unlock (Allow Account Changes)" />
+        <Button
+            android:id="@+id/btnRestrict"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Apply Restrictions" />
 
+        <Button
+            android:id="@+id/btnFrpLock"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="FRP Lock (Disable Google Account Removal)" />
 
-    <Button
-        android:id="@+id/btnClear"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="Clear Restrictions" />
+        <Button
+            android:id="@+id/btnFrpUnlock"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="FRP Unlock (Allow Account Changes)" />
 
-    <!-- 🔹 Test LockScreen -->
-    <Button
-        android:id="@+id/btnShowLockScreen"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="Show LockScreen (Test)" />
+        <Button
+            android:id="@+id/btnClear"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Clear Restrictions" />
 
-    <!-- 🔹 Test Unlock -->
-    <Button
-        android:id="@+id/btnClearLockScreen"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="Clear LockScreen (Test)" />
+        <!-- 🔹 Test LockScreen -->
+        <Button
+            android:id="@+id/btnShowLockScreen"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Show LockScreen (Test)" />
 
-</LinearLayout>
+        <!-- 🔹 Test Unlock -->
+        <Button
+            android:id="@+id/btnClearLockScreen"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Clear LockScreen (Test)" />
+
+        <Button
+            android:id="@+id/btnGetSerial"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="Get Serial Number (S/N)" />
+
+        <Button
+            android:id="@+id/btnGetImei1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Get IMEI 1 (Slot 0)" />
+
+        <Button
+            android:id="@+id/btnGetImei2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Get IMEI 2 (Slot 1)" />
+
+    </LinearLayout>
+</ScrollView>

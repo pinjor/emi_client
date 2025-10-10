@@ -4,55 +4,65 @@ import android.content.Context
 import android.util.Log
 import com.example.emilockerclient.managers.DeviceControlManager
 import com.example.emilockerclient.network.ServerCommand
+import com.google.gson.Gson
 
 object CommandHandler {
     private const val TAG = "CommandHandler"
+    private val gson = Gson()
 
-    /**
-     * Handle a server command. Keep this small and idempotent.
-     * The ServerCommand model is expected to have:
-     *  - type: String
-     *  - payload: Map<String, String>?
-     *
-     * If you need ack back to server, do it in the worker that calls this.
-     */
     fun handle(context: Context, cmd: ServerCommand) {
-        Log.i(TAG, "Handling command: ${cmd.type}")
+        Log.i(TAG, "⚡ Handling command: ${cmd.command} → Payload: ${gson.toJson(cmd.payload)}")
+
         val manager = DeviceControlManager(context)
 
+        // Check device ownership before executing sensitive commands
+        if (!manager.isDeviceOwner()) {
+            Log.w(TAG, "🚫 Device is not owner → cannot execute '${cmd.command}' command")
+            return
+        }
+
         try {
-            when (cmd.type.uppercase().trim()) {
-                "LOCK_DEVICE" -> {
+            when (cmd.command.lowercase().trim()) {
+                "lock" -> {
                     val message = cmd.payload?.get("message") ?: "Device locked by admin."
+                    Log.i(TAG, "🔒 Executing LOCK command: message='$message'")
                     manager.showLockScreen(message)
                 }
-                "UNLOCK_DEVICE" -> {
+
+                "unlock" -> {
+                    Log.i(TAG, "🔓 Executing UNLOCK command")
                     manager.clearLock()
                 }
-                "SHOW_MESSAGE" -> {
-                    val message = cmd.payload?.get("message") ?: ""
-                    // Reuse lock screen for showing message (keeps user blocked until admin clears)
-                    manager.showLockScreen(message)
+
+                "disable-camera" -> {
+                    Log.i(TAG, "📷 Disabling camera")
+                    manager.disableCamera()
                 }
-                "APPLY_RESTRICTIONS" -> {
-                    if (manager.isDeviceOwner()) manager.applyRestrictions()
-                    else Log.w(TAG, "APPLY_RESTRICTIONS skipped: not device owner")
+
+                "enable-camera" -> {
+                    Log.i(TAG, "📷 Enabling camera")
+                    manager.enableCamera()
                 }
-                "CLEAR_RESTRICTIONS" -> {
-                    if (manager.isDeviceOwner()) manager.clearRestrictions()
-                    else Log.w(TAG, "CLEAR_RESTRICTIONS skipped: not device owner")
+
+                "disable-bluetooth" -> {
+                    Log.i(TAG, "🔵 Disabling Bluetooth")
+                    manager.disableBluetooth()
                 }
-                "ENFORCE_FRP" -> {
-                    // payload: {"enabled":"true"}
-                    val enabled = cmd.payload?.get("enabled")?.toBoolean() ?: true
-                    manager.enforceFrpProtection(enabled)
+
+                "enable-bluetooth" -> {
+                    Log.i(TAG, "🔵 Enabling Bluetooth")
+                    manager.enableBluetooth()
                 }
+
                 else -> {
-                    Log.w(TAG, "Unknown command: ${cmd.type}")
+                    Log.w(TAG, "⚠️ Unknown command received: ${cmd.command}")
                 }
             }
+
+            Log.i(TAG, "✅ Command '${cmd.command}' handled successfully")
+
         } catch (t: Throwable) {
-            Log.e(TAG, "Error handling command ${cmd.type}: ${t.message}", t)
+            Log.e(TAG, "💥 Error executing command '${cmd.command}': ${t.message}", t)
         }
     }
 }

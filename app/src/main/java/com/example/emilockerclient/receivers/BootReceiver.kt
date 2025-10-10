@@ -10,7 +10,7 @@ import androidx.work.WorkManager
 import com.example.emilockerclient.managers.DeviceControlManager
 import com.example.emilockerclient.services.LockService
 import com.example.emilockerclient.utils.PrefsHelper
-import com.example.emilockerclient.workers.HeartbeatWorker
+//import com.example.emilockerclient.workers.HeartbeatWorker
 import com.example.emilockerclient.workers.OfflineCheckWorker
 import java.util.concurrent.TimeUnit
 
@@ -28,10 +28,10 @@ class BootReceiver : BroadcastReceiver() {
                     manager.showLockScreen(PrefsHelper.getLockMessage(context))
                 }
 
-                // 🔹 Restart workers
-                val heartbeatWork =
-                    PeriodicWorkRequestBuilder<HeartbeatWorker>(15, TimeUnit.MINUTES).build()
-                WorkManager.getInstance(context).enqueue(heartbeatWork)
+//                // 🔹 Restart workers
+//                val heartbeatWork =
+//                    PeriodicWorkRequestBuilder<HeartbeatWorker>(15, TimeUnit.MINUTES).build()
+//                WorkManager.getInstance(context).enqueue(heartbeatWork)
 
                 val offlineCheckWork =
                     PeriodicWorkRequestBuilder<OfflineCheckWorker>(1, TimeUnit.HOURS).build()

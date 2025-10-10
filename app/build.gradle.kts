@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -34,19 +35,21 @@ android {
         jvmTarget = "11"
     }
 }
+
 val workVersion = "2.10.0"
 val retrofitVersion = "2.11.0"
-val okHttpVersion = "5.1.0"
+val okHttpVersion = "4.11.0"
 
 dependencies {
     // WorkManager
     implementation("androidx.work:work-runtime-ktx:$workVersion")
 
-    // Retrofit + Gson
+    // Retrofit + Gson converter
     implementation("com.squareup.retrofit2:retrofit:$retrofitVersion")
     implementation("com.squareup.retrofit2:converter-gson:$retrofitVersion")
 
-    // OkHttp logging
+    // OkHttp core + logging interceptor (⚠ you missed okhttp core previously)
+    implementation("com.squareup.okhttp3:okhttp:$okHttpVersion")
     implementation("com.squareup.okhttp3:logging-interceptor:$okHttpVersion")
 
     // Firebase
