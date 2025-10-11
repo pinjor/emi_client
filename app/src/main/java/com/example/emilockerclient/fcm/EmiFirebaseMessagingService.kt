@@ -67,12 +67,20 @@ class EmiFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
-        Log.i(TAG, "📩 FCM message received: ${gson.toJson(remoteMessage.data)}")
+        Log.i(TAG, "📩 FCM message received with payload: ${gson.toJson(remoteMessage.data)}")
+
 
         val data =
             remoteMessage.data // data is the map of key-value pairs sent in the message from the server
-        Log.i(TAG, "🔍 Message data payload: ${gson.toJson(data)}")
-
+        val commandValue = data["command"] ?: data["cmd"] ?: data["type"]
+        if(!commandValue.isNullOrBlank()){
+            // copy all keys into a Map<String,String>
+            val params = data.mapValues { it.value ?: "" }
+            val cmd = ServerCommand(command = commandValue, params = params)
+            CommandHandler.handle(applicationContext, cmd)
+        }else{
+            Log.w(TAG, "⚠️ 'command' key missing or empty in FCM data payload: ${gson.toJson(data)}")
+        }
 //        if (data.isEmpty()) {
 //            Log.w(TAG, "⚠️ Received FCM message with no data payload")
 //            return

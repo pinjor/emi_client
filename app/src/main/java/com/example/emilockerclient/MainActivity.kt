@@ -111,41 +111,41 @@ class MainActivity : AppCompatActivity() {
             else Toast.makeText(this, "Admin not active", Toast.LENGTH_SHORT).show()
         }
 
-        // Apply / Clear Restrictions
-        findViewById<Button>(R.id.btnRestrict).setOnClickListener {
-            if (deviceManager.isDeviceOwner()) {
-                deviceManager.applyRestrictions()
-                Toast.makeText(this, "Restrictions applied", Toast.LENGTH_SHORT).show()
-            } else Toast.makeText(
-                this,
-                "Restrictions require Device Owner mode",
-                Toast.LENGTH_SHORT
-            ).show()
-        }
-        findViewById<Button>(R.id.btnClear).setOnClickListener {
-            if (deviceManager.isDeviceOwner()) {
-                deviceManager.clearRestrictions()
-                Toast.makeText(this, "Restrictions cleared", Toast.LENGTH_SHORT).show()
-            } else Toast.makeText(
-                this,
-                "Restrictions require Device Owner mode",
-                Toast.LENGTH_SHORT
-            ).show()
-        }
-
-        // FRP Lock / Unlock
-        findViewById<Button>(R.id.btnFrpLock).setOnClickListener {
-            if (deviceManager.isDeviceOwner()) {
-                deviceManager.enforceFrpProtection(true)
-                Toast.makeText(this, "FRP Lock applied", Toast.LENGTH_SHORT).show()
-            } else Toast.makeText(this, "Device Owner required", Toast.LENGTH_SHORT).show()
-        }
-        findViewById<Button>(R.id.btnFrpUnlock).setOnClickListener {
-            if (deviceManager.isDeviceOwner()) {
-                deviceManager.enforceFrpProtection(false)
-                Toast.makeText(this, "FRP Lock removed", Toast.LENGTH_SHORT).show()
-            } else Toast.makeText(this, "Device Owner required", Toast.LENGTH_SHORT).show()
-        }
+//        // Apply / Clear Restrictions
+//        findViewById<Button>(R.id.btnRestrict).setOnClickListener {
+//            if (deviceManager.isDeviceOwner()) {
+//                deviceManager.applyRestrictions()
+//                Toast.makeText(this, "Restrictions applied", Toast.LENGTH_SHORT).show()
+//            } else Toast.makeText(
+//                this,
+//                "Restrictions require Device Owner mode",
+//                Toast.LENGTH_SHORT
+//            ).show()
+//        }
+//        findViewById<Button>(R.id.btnClear).setOnClickListener {
+//            if (deviceManager.isDeviceOwner()) {
+//                deviceManager.clearRestrictions()
+//                Toast.makeText(this, "Restrictions cleared", Toast.LENGTH_SHORT).show()
+//            } else Toast.makeText(
+//                this,
+//                "Restrictions require Device Owner mode",
+//                Toast.LENGTH_SHORT
+//            ).show()
+//        }
+//
+//        // FRP Lock / Unlock
+//        findViewById<Button>(R.id.btnFrpLock).setOnClickListener {
+//            if (deviceManager.isDeviceOwner()) {
+//                deviceManager.enforceFrpProtection(true)
+//                Toast.makeText(this, "FRP Lock applied", Toast.LENGTH_SHORT).show()
+//            } else Toast.makeText(this, "Device Owner required", Toast.LENGTH_SHORT).show()
+//        }
+//        findViewById<Button>(R.id.btnFrpUnlock).setOnClickListener {
+//            if (deviceManager.isDeviceOwner()) {
+//                deviceManager.enforceFrpProtection(false)
+//                Toast.makeText(this, "FRP Lock removed", Toast.LENGTH_SHORT).show()
+//            } else Toast.makeText(this, "Device Owner required", Toast.LENGTH_SHORT).show()
+//        }
 
         // Lock Screen
         findViewById<Button>(R.id.btnShowLockScreen).setOnClickListener {

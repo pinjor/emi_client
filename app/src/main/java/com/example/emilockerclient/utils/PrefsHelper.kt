@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 
 object PrefsHelper {
+
     private const val PREFS_NAME = "emi_prefs"
     private const val KEY_LOCKED = "locked"
     private const val KEY_LOCK_MSG = "lock_message"
@@ -25,10 +26,7 @@ object PrefsHelper {
     }
 
     fun getLockMessage(context: Context): String {
-        return prefs(context).getString(
-            KEY_LOCK_MSG,
-            "Your EMI payment is overdue. Contact seller."
-        ) ?: ""
+        return prefs(context).getString(KEY_LOCK_MSG, "Your EMI payment is overdue. Contact seller.") ?: ""
     }
 
     fun setLastHeartbeatTime(context: Context, time: Long) {

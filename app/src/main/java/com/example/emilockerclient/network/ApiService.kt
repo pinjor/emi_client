@@ -15,13 +15,32 @@ data class DeviceRegisterRequest(
     val fcm_token: String
 )
 
-// Standard response structure (you can adjust if backend returns different fields)
 
-// Generic command structure for FCM and server responses
+/**
+ * Generic command model parsed from FCM data payload.
+ *
+ * Example incoming data:
+ * { "command":"DISABLE_CAMERA", "state":"true" }
+ * { "command":"HIDE_APP", "package_name":"com.facebook.katana", "state":"true" }
+ * { "command":"SHOW_MESSAGE", "message":"..." }
+ *
+ * We keep parameters in a Map for flexibility and add helpers below.
+ */
 data class ServerCommand(
-    val command: String,  // e.g. "lock", "unlock", "disable-camera"
-    val payload: Map<String, String>? = null
-)
+    val command: String,
+    val params: Map<String, String>? = null
+) {
+    // Helper: normalized command (lowercase, trimmed)
+    fun normalized(): String = command.trim().lowercase()
+
+    // Common param readers
+    fun getString(key: String, default: String? = null): String? =
+        params?.get(key) ?: default
+
+    fun getBoolean(key: String, default: Boolean = false): Boolean =
+        params?.get(key)?.let { it.equals("true", ignoreCase = true) || it == "1" } ?: default
+}
+
 
 // Optional command acknowledgment (if server expects one)
 data class CommandAckRequest(

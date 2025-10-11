@@ -21,19 +21,19 @@ class LockScreenActivity : AppCompatActivity() {
 
     private val unlockReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            finish() // close lock screen on unlock
+            finish() // Close the lock screen when unlock action is received
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Modern API to show above lock screen and turn screen on
+        // Show activity above lock screen and turn screen on
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
                 setShowWhenLocked(true)
                 setTurnScreenOn(true)
-                // requestDismissKeyguard is not called because we intentionally want to block normal keyguard
+                // Intentionally not dismissing keyguard to block normal unlock
             } else {
                 window.addFlags(
                     WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
@@ -41,33 +41,31 @@ class LockScreenActivity : AppCompatActivity() {
                 )
             }
 
-            // Keep display and block user from sleeping the app
-            window.addFlags(
-                WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
-            )
+            // Keep screen on while this activity is displayed
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         } catch (_: Exception) {
-            // ignore
+            // Ignore exceptions from window flag manipulations
         }
 
         setContentView(R.layout.activity_lock_screen)
 
-        // Read lock message
+        // Display lock message from Intent extra or saved preferences
         val message = intent.getStringExtra("LOCK_MESSAGE") ?: PrefsHelper.getLockMessage(this)
         findViewById<TextView>(R.id.tvLockMessage).text = message
 
-        // Emergency dial button
+        // Emergency call button dials "999"
         findViewById<Button>(R.id.btnEmergency).setOnClickListener {
-            val dial = Intent(Intent.ACTION_DIAL, Uri.parse("tel:999"))
-            startActivity(dial)
+            val dialIntent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:999"))
+            startActivity(dialIntent)
         }
 
-        // Register unlock receiver (explicitly exported false in manifest; use local receiver)
+        // Register BroadcastReceiver for unlock events; local, non-exported receiver
         registerReceiver(unlockReceiver, IntentFilter(UNLOCK_ACTION), RECEIVER_NOT_EXPORTED)
 
-        // Disable system back by consuming it
+        // Disable system back button while lock screen is shown
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                // blocked
+                // Back press is disabled here
             }
         })
     }
@@ -77,6 +75,7 @@ class LockScreenActivity : AppCompatActivity() {
         try {
             unregisterReceiver(unlockReceiver)
         } catch (_: Exception) {
+            // Safe to ignore if already unregistered or failed
         }
     }
 }
