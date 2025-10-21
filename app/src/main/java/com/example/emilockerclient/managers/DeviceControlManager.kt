@@ -15,6 +15,7 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
 import android.os.UserManager
+import android.provider.Settings
 import android.util.Log
 import androidx.core.content.FileProvider
 import com.example.emilockerclient.admin.EmiAdminReceiver
@@ -170,7 +171,7 @@ class DeviceControlManager(private val context: Context) {
             try {
                 enableCamera()
                 enableBluetooth()
-                enableUSBDataTransfer()
+                clearUsbAdbRestrictions()
                 enableOutgoingCallAndSMS()
                 Log.i(TAG, "All device features restored to normal")
             } catch (e: Exception) {
@@ -346,72 +347,149 @@ class DeviceControlManager(private val context: Context) {
         }
     }
 
-
-
-
-//    disable usb debugging, usb file transfer, otg, etc.
-// Disable USB file transfer (MTP/PTP)
-fun disableUSBDataTransfer() {
-    if (!isDeviceOwner()) { Log.w(TAG, "disableUSBDataTransfer: not device owner"); return }
-    try {
-        dpm.addUserRestriction(compName, android.os.UserManager.DISALLOW_USB_FILE_TRANSFER)
-        Log.i(TAG, "USB file transfer disabled")
-
-        // Optional: deeper USB signaling block on Android 12+
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            dpm.setUsbDataSignalingEnabled(false)
-            Log.i(TAG, "USB data signaling disabled (Android 12+)")
+    // Call to apply restrictions: disable USB file transfer, disable USB data signalling, disable ADB & wireless debugging (best-effort)
+    fun applyUsbAdbRestrictions() {
+        if (!isDeviceOwner()) {
+            Log.w(TAG, "applyUsbAdbRestrictions: not device owner")
+            return
         }
-    } catch (e: Exception) {
-        Log.w(TAG, "disableUSBDataTransfer failed: ${e.message}")
-    }
-}
 
-    // Enable USB file transfer (optional)
-    fun enableUSBDataTransfer() {
-        if (!isDeviceOwner()) { Log.w(TAG, "enableUSBDataTransfer: not device owner"); return }
         try {
-            dpm.clearUserRestriction(compName, android.os.UserManager.DISALLOW_USB_FILE_TRANSFER)
-            Log.i(TAG, "USB file transfer enabled")
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                dpm.setUsbDataSignalingEnabled(true)
-                Log.i(TAG, "USB data signaling enabled (Android 12+)")
+            // 1) Block USB file transfer (MTP/PTP) via user restriction
+            try {
+                dpm.addUserRestriction(compName, android.os.UserManager.DISALLOW_USB_FILE_TRANSFER)
+                Log.i(TAG, "DISALLOW_USB_FILE_TRANSFER applied")
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to add DISALLOW_USB_FILE_TRANSFER: ${e.message}")
             }
+
+            // 2) Disable deeper USB data signaling (Android 11+ / API 30+ / may require device owner)
+            try {
+                // device owner API: setUsbDataSignalingEnabled(boolean)
+                // guard by reflection/dpm method timeout if needed
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S /* API 31 */) {
+                    try {
+                        // direct call if available
+                        dpm.setUsbDataSignalingEnabled(false)
+                        Log.i(TAG, "setUsbDataSignalingEnabled(false) invoked")
+                    } catch (noMethod: NoSuchMethodError) {
+                        // fallback by reflection (just in case)
+                        try {
+                            val m = DevicePolicyManager::class.java.getMethod("setUsbDataSignalingEnabled", Boolean::class.javaPrimitiveType)
+                            m.invoke(dpm, false)
+                            Log.i(TAG, "setUsbDataSignalingEnabled(false) invoked via reflection")
+                        } catch (re: Exception) {
+                            Log.w(TAG, "setUsbDataSignalingEnabled not available: ${re.message}")
+                        }
+                    }
+                } else {
+                    Log.i(TAG, "USB data signaling disable not supported on SDK < 31")
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to disable USB data signaling: ${e.message}")
+            }
+
+            // 3) Disable ADB over USB (global setting "adb_enabled")
+            try {
+                // set to "0" to disable
+                dpm.setGlobalSetting(compName, Settings.Global.ADB_ENABLED, "0")
+                Log.i(TAG, "Global setting ADB_ENABLED set to 0")
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to set ADB_ENABLED global: ${e.message}")
+            }
+
+            // 4) Best-effort: disable some wireless adb globals (names vary by platform)
+            // Try a couple of commonly seen keys; many OEMs don't expose a single standard key for wireless debugging.
+            val wirelessKeys = listOf(
+                "adb_wifi_enabled",          // used on some platforms
+                "adb_wireless",              // possible key on others (best-effort)
+                "airplane_adb_enabled",      // unlikely but harmless to try
+                "wifi_adb_enabled"           // alternate name
+            )
+            try {
+                for (key in wirelessKeys) {
+                    try {
+                        dpm.setGlobalSetting(compName, key, "0")
+                        Log.i(TAG, "Attempted to set global $key -> 0")
+                    } catch (e: Exception) {
+                        // ignore individual failures
+                    }
+                }
+            } catch (_: Exception) {}
+
+            Log.i(TAG, "applyUsbAdbRestrictions complete (best-effort).")
         } catch (e: Exception) {
-            Log.w(TAG, "enableUSBDataTransfer failed: ${e.message}")
+            Log.e(TAG, "applyUsbAdbRestrictions failed: ${e.message}")
         }
     }
 
-    // Disable USB debugging (ADB)
-    fun disableADB() {
-        if (!isDeviceOwner()) { Log.w(TAG, "disableADB: not device owner"); return }
+    // Call to clear restrictions: enable USB data transfer, enable USB signaling, enable ADB & wireless debugging (best-effort)
+    fun clearUsbAdbRestrictions() {
+        if (!isDeviceOwner()) {
+            Log.w(TAG, "clearUsbAdbRestrictions: not device owner")
+            return
+        }
+
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                // This works only on some OEMs/devices as a global setting
-                dpm.setGlobalSetting(compName, "adb_enabled", "0")
-                Log.i(TAG, "ADB disabled via global setting")
-            } else {
-                Log.w(TAG, "disableADB: not supported on this Android version")
+            // 1) Clear USB file transfer restriction
+            try {
+                dpm.clearUserRestriction(compName, android.os.UserManager.DISALLOW_USB_FILE_TRANSFER)
+                Log.i(TAG, "DISALLOW_USB_FILE_TRANSFER cleared")
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to clear DISALLOW_USB_FILE_TRANSFER: ${e.message}")
             }
+
+            // 2) Re-enable USB data signaling if supported
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S /* API 31 */) {
+                    try {
+                        dpm.setUsbDataSignalingEnabled(true)
+                        Log.i(TAG, "setUsbDataSignalingEnabled(true) invoked")
+                    } catch (noMethod: NoSuchMethodError) {
+                        try {
+                            val m = DevicePolicyManager::class.java.getMethod("setUsbDataSignalingEnabled", Boolean::class.javaPrimitiveType)
+                            m.invoke(dpm, true)
+                            Log.i(TAG, "setUsbDataSignalingEnabled(true) via reflection")
+                        } catch (re: Exception) {
+                            Log.w(TAG, "setUsbDataSignalingEnabled not available: ${re.message}")
+                        }
+                    }
+                } else {
+                    Log.i(TAG, "USB data signaling enable not supported on SDK < 31")
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to enable USB data signaling: ${e.message}")
+            }
+
+            // 3) Re-enable ADB over USB (global setting "adb_enabled" -> "1")
+            try {
+                dpm.setGlobalSetting(compName, Settings.Global.ADB_ENABLED, "1")
+                Log.i(TAG, "Global setting ADB_ENABLED set to 1")
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to set ADB_ENABLED global: ${e.message}")
+            }
+
+            // 4) Best-effort: enable wireless adb globals (may not exist)
+            val wirelessKeys = listOf(
+                "adb_wifi_enabled",
+                "adb_wireless",
+                "wifi_adb_enabled"
+            )
+            try {
+                for (key in wirelessKeys) {
+                    try {
+                        dpm.setGlobalSetting(compName, key, "1")
+                        Log.i(TAG, "Attempted to set global $key -> 1")
+                    } catch (e: Exception) {
+                        // ignore
+                    }
+                }
+            } catch (_: Exception) {}
+
+            Log.i(TAG, "clearUsbAdbRestrictions complete (best-effort).")
         } catch (e: Exception) {
-            Log.w(TAG, "disableADB failed: ${e.message}")
+            Log.e(TAG, "clearUsbAdbRestrictions failed: ${e.message}")
         }
     }
-
-    // Enable ADB (optional)
-    fun enableADB() {
-        if (!isDeviceOwner()) { Log.w(TAG, "enableADB: not device owner"); return }
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                dpm.setGlobalSetting(compName, "adb_enabled", "1")
-                Log.i(TAG, "ADB enabled via global setting")
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "enableADB failed: ${e.message}")
-        }
-    }
-
-
 
 }

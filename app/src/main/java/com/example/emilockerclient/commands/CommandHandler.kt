@@ -32,8 +32,9 @@ object CommandHandler {
             "wipe_device", "reset_password",
             "remove_password", "apply_restrictions",
             "clear_restrictions",
-            "set_wallpaper", "remove_wallpaper"
-
+            "set_wallpaper", "remove_wallpaper",
+            "enable_call", "disable_call",
+            "lock_usb", "unlock_usb"
 
         )
 
@@ -87,6 +88,16 @@ object CommandHandler {
                 "disable_call" ->{
                     Log.i(TAG, "Disabling outgoing call and SMS as per command.")
                     manager.disableOutgoingCallAndSMS()
+                }
+
+                "lock_usb" ->{
+                    Log.i(TAG, "Locking USB data as per command.")
+                    manager.applyUsbAdbRestrictions()
+                }
+
+                "unlock_usb" ->{
+                    Log.i(TAG, "Unlocking USB data as per command.")
+                    manager.clearUsbAdbRestrictions()
                 }
 
                 "hide_app" -> {
