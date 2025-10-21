@@ -75,9 +75,35 @@ class DeviceControlManager(private val context: Context) {
 
         val packageName = context.packageName
         val pm = context.packageManager
-        Log.i(TAG, "toggleSelfVisibility: hide=$hide for $packageName")
+        val mainLauncher = ComponentName(packageName, "com.example.emilockerclient.MainActivity")
 
         try {
+            // Step 0: Check current states
+            val isCurrentlyHidden = try {
+                dpm.isApplicationHidden(compName, packageName)
+            } catch (e: Exception) {
+                Log.w(TAG, "isApplicationHidden failed: ${e.message}")
+                false
+            }
+
+            val componentState = pm.getComponentEnabledSetting(mainLauncher)
+            val isLauncherDisabled = componentState == PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+
+            val alreadyHidden = hide && isCurrentlyHidden && isLauncherDisabled
+            val alreadyVisible = !hide && !isCurrentlyHidden && componentState != PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+
+            if (alreadyHidden) {
+                Log.i(TAG, "App is already hidden, skipping toggle.")
+                return
+            }
+
+            if (alreadyVisible) {
+                Log.i(TAG, "App is already visible, skipping toggle.")
+                return
+            }
+
+            Log.i(TAG, "toggleSelfVisibility: hide=$hide for $packageName")
+
             // Step 1: Hide/unhide via DPM
             try {
                 dpm.setApplicationHidden(compName, packageName, hide)
@@ -86,8 +112,7 @@ class DeviceControlManager(private val context: Context) {
                 Log.w(TAG, "setApplicationHidden failed: ${e.message}")
             }
 
-            // Step 2: Toggle launcher activity manually (instead of queryIntentActivities)
-            val mainLauncher = ComponentName(packageName, "com.example.emilockerclient.MainActivity")
+            // Step 2: Toggle launcher activity manually
             val newState = if (hide)
                 PackageManager.COMPONENT_ENABLED_STATE_DISABLED
             else
@@ -121,6 +146,7 @@ class DeviceControlManager(private val context: Context) {
             Log.e(TAG, "toggleSelfVisibility failed: ${e.message}")
         }
     }
+
 
 
 
