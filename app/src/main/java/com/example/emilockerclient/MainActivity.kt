@@ -85,87 +85,8 @@ class MainActivity : AppCompatActivity() {
 //        // 🔹 One immediate heartbeat on app start
 //        WorkManager.getInstance(this).enqueue(OneTimeWorkRequestBuilder<HeartbeatWorker>().build())
 
-        setupButtons()
     }
 
-    private fun setupButtons() {
-        // Enable Admin
-        findViewById<Button>(R.id.btnEnableAdmin).setOnClickListener {
-            if (deviceManager.isAdminActive()) {
-                Toast.makeText(this, "Already admin!", Toast.LENGTH_SHORT).show()
-            } else {
-                val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).apply {
-                    putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, compName)
-                    putExtra(
-                        DevicePolicyManager.EXTRA_ADD_EXPLANATION,
-                        "Required for EMI lock enforcement"
-                    )
-                }
-                startActivity(intent)
-            }
-        }
-
-        // Lock Device
-        findViewById<Button>(R.id.btnLock).setOnClickListener {
-            if (deviceManager.isAdminActive()) deviceManager.lockDevice()
-            else Toast.makeText(this, "Admin not active", Toast.LENGTH_SHORT).show()
-        }
-
-//        // Apply / Clear Restrictions
-//        findViewById<Button>(R.id.btnRestrict).setOnClickListener {
-//            if (deviceManager.isDeviceOwner()) {
-//                deviceManager.applyRestrictions()
-//                Toast.makeText(this, "Restrictions applied", Toast.LENGTH_SHORT).show()
-//            } else Toast.makeText(
-//                this,
-//                "Restrictions require Device Owner mode",
-//                Toast.LENGTH_SHORT
-//            ).show()
-//        }
-//        findViewById<Button>(R.id.btnClear).setOnClickListener {
-//            if (deviceManager.isDeviceOwner()) {
-//                deviceManager.clearRestrictions()
-//                Toast.makeText(this, "Restrictions cleared", Toast.LENGTH_SHORT).show()
-//            } else Toast.makeText(
-//                this,
-//                "Restrictions require Device Owner mode",
-//                Toast.LENGTH_SHORT
-//            ).show()
-//        }
-//
-//        // FRP Lock / Unlock
-//        findViewById<Button>(R.id.btnFrpLock).setOnClickListener {
-//            if (deviceManager.isDeviceOwner()) {
-//                deviceManager.enforceFrpProtection(true)
-//                Toast.makeText(this, "FRP Lock applied", Toast.LENGTH_SHORT).show()
-//            } else Toast.makeText(this, "Device Owner required", Toast.LENGTH_SHORT).show()
-//        }
-//        findViewById<Button>(R.id.btnFrpUnlock).setOnClickListener {
-//            if (deviceManager.isDeviceOwner()) {
-//                deviceManager.enforceFrpProtection(false)
-//                Toast.makeText(this, "FRP Lock removed", Toast.LENGTH_SHORT).show()
-//            } else Toast.makeText(this, "Device Owner required", Toast.LENGTH_SHORT).show()
-//        }
-
-        // Lock Screen
-        findViewById<Button>(R.id.btnShowLockScreen).setOnClickListener {
-            deviceManager.showLockScreen("⚠️ EMI overdue! Please contact seller.")
-        }
-        findViewById<Button>(R.id.btnClearLockScreen).setOnClickListener {
-            deviceManager.clearLock()
-        }
-
-        // Device Identifiers
-        findViewById<Button>(R.id.btnGetSerial).setOnClickListener {
-            retrieveDeviceId("Serial Number (S/N)") { identifierFetcher.getSerialNumber() }
-        }
-        findViewById<Button>(R.id.btnGetImei1).setOnClickListener {
-            retrieveDeviceId("IMEI 1 (Slot 0)") { identifierFetcher.getImei(0) }
-        }
-        findViewById<Button>(R.id.btnGetImei2).setOnClickListener {
-            retrieveDeviceId("IMEI 2 (Slot 1)") { identifierFetcher.getImei(1) }
-        }
-    }
 
     private fun retrieveDeviceId(idName: String, fetcher: () -> String) {
         if (!deviceManager.isDeviceOwner()) {

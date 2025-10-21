@@ -292,15 +292,10 @@ class DeviceControlManager(private val context: Context) {
     fun requestLocation(callback: (String)->Unit) {
         thread {
             try {
+                Log.i(TAG, "requestLocation(): not yet implemented")
+                Log.w(TAG, "Location retrieval not implemented yet.")
                 // TODO: implement fused location retrieval (FusedLocationProviderClient) and return a JSON string
-//                val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
-//                fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-//                    if (location != null) {
-//                        val lat = location.latitude
-//                        val lon = location.longitude
-//                        // send to backend
-//                    }
-//                }
+
 
 
                 callback("LOCATION_NOT_IMPLEMENTED")

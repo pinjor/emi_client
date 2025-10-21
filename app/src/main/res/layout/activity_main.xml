@@ -1,114 +1,59 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true">
+    android:fillViewport="true"
+    android:background="?android:attr/colorBackground">
 
     <LinearLayout
         android:id="@+id/main"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center"
+        android:layout_height="match_parent"
         android:orientation="vertical"
-        android:paddingStart="20dp"
-        android:paddingEnd="20dp"
-        android:paddingBottom="20dp"
-        android:paddingTop="50dp"> <!-- 🔹 Added top padding -->
+        android:gravity="center"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:paddingTop="350dp"
+        android:paddingBottom="48dp">
 
+        <!-- Welcome title -->
         <TextView
             android:id="@+id/tvWelcome"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
             android:text="@string/welcome_string"
-            android:textSize="24sp"
-            android:textStyle="bold" />
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:textColor="?android:attr/textColorPrimary"
+            android:layout_marginBottom="12dp"
+            android:gravity="center"/>
 
+        <!-- Description under title -->
         <TextView
             android:id="@+id/tvAppDescription"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/app_description"
+            android:textSize="16sp"
+            android:textAlignment="center"
+            android:lineHeight="22sp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- small spacer to keep content vertically centered on larger screens -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <!-- footer / version -->
+        <TextView
+            android:id="@+id/tvFooter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
-            android:text="@string/app_description"
-            android:textAlignment="center" />
-
-        <Button
-            android:id="@+id/btnEnableAdmin"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="Enable Device Admin" />
-
-        <Button
-            android:id="@+id/btnLock"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="Lock Device (DPM only)" />
-
-        <Button
-            android:id="@+id/btnRestrict"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="Apply Restrictions" />
-
-        <Button
-            android:id="@+id/btnFrpLock"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="FRP Lock (Disable Google Account Removal)" />
-
-        <Button
-            android:id="@+id/btnFrpUnlock"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="FRP Unlock (Allow Account Changes)" />
-
-        <Button
-            android:id="@+id/btnClear"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="Clear Restrictions" />
-
-        <!-- 🔹 Test LockScreen -->
-        <Button
-            android:id="@+id/btnShowLockScreen"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="Show LockScreen (Test)" />
-
-        <!-- 🔹 Test Unlock -->
-        <Button
-            android:id="@+id/btnClearLockScreen"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="Clear LockScreen (Test)" />
-
-        <Button
-            android:id="@+id/btnGetSerial"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="Get Serial Number (S/N)" />
-
-        <Button
-            android:id="@+id/btnGetImei1"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Get IMEI 1 (Slot 0)" />
-
-        <Button
-            android:id="@+id/btnGetImei2"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Get IMEI 2 (Slot 1)" />
+            android:text="EMI Locker • v1.0.0"
+            android:textSize="12sp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:layout_marginTop="12dp"/>
 
     </LinearLayout>
 </ScrollView>
