@@ -36,7 +36,12 @@
             android:exported="true"
             android:launchMode="singleTask"
             android:screenOrientation="portrait"
-            android:taskAffinity="" /> <!-- Foreground service for lock persistence -->
+            android:taskAffinity="" /> <!-- Lock Monitor Service - keeps lock screen persistent -->
+        <service
+            android:name=".services.LockMonitorService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" /> <!-- Foreground service for lock persistence -->
         <service
             android:name=".services.LockService"
             android:enabled="true"

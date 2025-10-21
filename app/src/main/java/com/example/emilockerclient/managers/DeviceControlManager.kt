@@ -15,6 +15,7 @@ import com.example.emilockerclient.admin.EmiAdminReceiver
 import com.example.emilockerclient.network.ApiResponse
 import com.example.emilockerclient.network.RetrofitClient
 import com.example.emilockerclient.services.LocationService
+import com.example.emilockerclient.services.LockMonitorService
 import com.example.emilockerclient.ui.LockScreenActivity
 import com.example.emilockerclient.utils.PrefsHelper
 import retrofit2.Call
@@ -44,10 +45,20 @@ class DeviceControlManager(private val context: Context) {
                 putExtra("LOCK_MESSAGE", message)
             }
             context.startActivity(intent)
+
+            // Start the lock monitor service to keep lock screen persistent
+            val serviceIntent = Intent(context, LockMonitorService::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(serviceIntent)
+            } else {
+                context.startService(serviceIntent)
+            }
+
+            Log.i(TAG, "Lock screen launched and monitor service started")
         } catch (e: Exception) {
             Log.w(TAG, "startActivity(lock) failed: ${e.message}")
         }
-        if (isAdminActive()) try { dpm.lockNow() } catch (e: Exception) { Log.w(TAG, "dpm.lockNow() exception: ${e.message}") }
+        // NOTE: We do NOT call dpm.lockNow() anymore - we only show the custom lock screen
     }
 
     fun clearLock() {
@@ -55,8 +66,17 @@ class DeviceControlManager(private val context: Context) {
         try {
             PrefsHelper.setLocked(context, false)
             PrefsHelper.setLockMessage(context, "")
-            // Add a closing parenthesis to fix the syntax error
-//            context.sendBroadcast(Intent("com.example.emilockerclient.ACTION_UNLOCK"), null, null)
+
+            // Stop the lock monitor service
+            val serviceIntent = Intent(context, LockMonitorService::class.java)
+            context.stopService(serviceIntent)
+
+            // Send broadcast to close lock screen activity
+            val unlockIntent = Intent("com.example.emilockerclient.ACTION_UNLOCK")
+            unlockIntent.setPackage(context.packageName)
+            context.sendBroadcast(unlockIntent)
+
+            Log.i(TAG, "Lock cleared, service stopped, and unlock broadcast sent")
         } catch (e: Exception) {
             Log.w(TAG, "clearLock failed: ${e.message}")
         }
