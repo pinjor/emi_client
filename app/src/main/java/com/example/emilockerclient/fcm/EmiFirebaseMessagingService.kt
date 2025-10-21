@@ -67,11 +67,13 @@ class EmiFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
-        Log.i(TAG, "📩 FCM message received with payload: ${gson.toJson(remoteMessage.data)}")
+//        Log.i(TAG, "📩 FCM message received with payload: ${gson.toJson(remoteMessage.data)}")
 
 
         val data =
             remoteMessage.data // data is the map of key-value pairs sent in the message from the server
+        Log.i(TAG, "📬 FCM Data Payload: ${gson.toJson(data)}")
+        Log.i(TAG, "received data: $data")
         val commandValue = data["command"] ?: data["cmd"] ?: data["type"]
         if(!commandValue.isNullOrBlank()){
             // copy all keys into a Map<String,String>

@@ -11,8 +11,8 @@ class SimReceiver : BroadcastReceiver() {
         if (intent.action == "android.intent.action.SIM_STATE_CHANGED") {
             Log.w("SimReceiver", "SIM state changed! Possible SIM swap detected.")
 
-            val manager = DeviceControlManager(context)
-            manager.showLockScreen("⚠️ SIM card changed! Device locked.")
+//            val manager = DeviceControlManager(context)
+//            manager.showLockScreen("⚠️ SIM card changed! Device locked.")
 
             // TODO: Optionally send heartbeat/alert to backend
 

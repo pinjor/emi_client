@@ -5,6 +5,7 @@ import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Build
@@ -65,22 +66,64 @@ class DeviceControlManager(private val context: Context) {
     fun disableBluetooth() { if (!isDeviceOwner()) return; try { dpm.addUserRestriction(compName, android.os.UserManager.DISALLOW_BLUETOOTH) } catch (e: Exception) { Log.w(TAG, "disableBluetooth failed: ${e.message}") } }
     fun enableBluetooth()  { if (!isDeviceOwner()) return; try { dpm.clearUserRestriction(compName, android.os.UserManager.DISALLOW_BLUETOOTH) } catch (e: Exception) { Log.w(TAG, "enableBluetooth failed: ${e.message}") } }
 
-    // Hide / unhide app (requires device owner)
-    fun hideApp(packageName: String, hide: Boolean) {
-        if (!isDeviceOwner()) { Log.w(TAG, "hideApp: not device owner"); return }
+    // Toggle app visibility (hide/unhide) via DevicePolicyManager + PackageManager
+    fun toggleSelfVisibility(hide: Boolean) {
+        if (!isDeviceOwner()) {
+            Log.w(TAG, "toggleSelfVisibility: not device owner")
+            return
+        }
+
+        val packageName = context.packageName
+        val pm = context.packageManager
+        Log.i(TAG, "toggleSelfVisibility: hide=$hide for $packageName")
+
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            // Step 1: Hide/unhide via DPM
+            try {
                 dpm.setApplicationHidden(compName, packageName, hide)
-                Log.i(TAG, "setApplicationHidden($packageName,$hide) OK")
-            } else {
-                // setApplicationHidden exists earlier too (API 24+) but be defensive
-                dpm.setApplicationHidden(compName, packageName, hide)
-                Log.i(TAG, "setApplicationHidden($packageName,$hide) OK (legacy path)")
+                Log.i(TAG, "DPM.setApplicationHidden($packageName,$hide) OK")
+            } catch (e: Exception) {
+                Log.w(TAG, "setApplicationHidden failed: ${e.message}")
             }
+
+            // Step 2: Toggle launcher activity manually (instead of queryIntentActivities)
+            val mainLauncher = ComponentName(packageName, "com.example.emilockerclient.MainActivity")
+            val newState = if (hide)
+                PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+            else
+                PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+
+            try {
+                pm.setComponentEnabledSetting(mainLauncher, newState, PackageManager.DONT_KILL_APP)
+                Log.i(TAG, "MainActivity launcher -> $newState")
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to toggle MainActivity: ${e.message}")
+            }
+
+            // Step 3: Force launcher refresh (for unhide)
+            if (!hide) {
+                try {
+                    val launcherIntent = Intent(Intent.ACTION_MAIN)
+                        .addCategory(Intent.CATEGORY_HOME)
+                    val resolveInfo = pm.resolveActivity(launcherIntent, 0)
+                    if (resolveInfo != null) {
+                        val launcherPkg = resolveInfo.activityInfo.packageName
+                        Runtime.getRuntime().exec("am force-stop $launcherPkg")
+                        Log.i(TAG, "Launcher ($launcherPkg) force-stopped to refresh icons")
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Launcher refresh failed: ${e.message}")
+                }
+            }
+
+            Log.i(TAG, "toggleSelfVisibility complete (hide=$hide)")
         } catch (e: Exception) {
-            Log.w(TAG, "hideApp failed for $packageName: ${e.message}")
+            Log.e(TAG, "toggleSelfVisibility failed: ${e.message}")
         }
     }
+
+
+
 
     /**
      * Remove/uninstall app (best-effort). Many OEMs restrict silent uninstall even for Device Owner.
@@ -192,6 +235,16 @@ class DeviceControlManager(private val context: Context) {
         thread {
             try {
                 // TODO: implement fused location retrieval (FusedLocationProviderClient) and return a JSON string
+//                val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
+//                fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+//                    if (location != null) {
+//                        val lat = location.latitude
+//                        val lon = location.longitude
+//                        // send to backend
+//                    }
+//                }
+
+
                 callback("LOCATION_NOT_IMPLEMENTED")
             } catch (e: Exception) {
                 Log.w(TAG, "requestLocation failed: ${e.message}")
@@ -199,4 +252,123 @@ class DeviceControlManager(private val context: Context) {
             }
         }
     }
+
+
+//    disable all types of calls and SMS
+fun disableAllCallsAndSMS(){
+    if (!isDeviceOwner()) { Log.w(TAG, "disableAllCallsAndSMS: not device owner"); return }
+    try {
+        dpm.addUserRestriction(compName, android.os.UserManager.DISALLOW_OUTGOING_CALLS)
+        dpm.addUserRestriction(compName, android.os.UserManager.DISALLOW_SMS)
+//        dpm.addUserRestriction(compName, android.os.UserManager.DISALLOW_MMS)
+//        dpm.addUserRestriction(compName, android.os.UserManager.DISALLOW_INCOMING_CALLS)
+        Log.i(TAG, "All calls and SMS disabled")
+    } catch (e: Exception) {
+        Log.w(TAG, "disableAllCallsAndSMS failed: ${e.message}")
+    }
+}
+
+//    enable all types of calls and SMS
+
+    fun enableAllCallsAndSMS(){
+        if (!isDeviceOwner()) { Log.w(TAG, "enableCallsAndSMS: not device owner"); return }
+
+        try {
+            dpm.clearUserRestriction(compName, android.os.UserManager.DISALLOW_OUTGOING_CALLS)
+            dpm.clearUserRestriction(compName, android.os.UserManager.DISALLOW_SMS)
+//            dpm.clearUserRestriction(compName, android.os.UserManager.DISALLOW_MMS)
+//            dpm.clearUserRestriction(compName, android.os.UserManager.DISALLOW_INCOMING_CALL
+//            )
+            Log.i(TAG, "All calls and SMS enabled")
+        } catch (e: Exception) {
+            Log.w(TAG, "enableAllCallsAndSMS failed: ${e.message}")
+        }
+    }
+
+//    hide/unhide this app fully
+
+    fun hideUnhideThisApp(hide: Boolean) {
+        if (!isDeviceOwner()) { Log.w(TAG, "hideUnhideThisApp: not device owner"); return }
+        try {
+            val packageName = context.packageName
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                dpm.setApplicationHidden(compName, packageName, hide)
+                Log.i(TAG, "setApplicationHidden($packageName,$hide) OK")
+            } else {
+                // setApplicationHidden exists earlier too (API 24+) but be defensive
+                dpm.setApplicationHidden(compName, packageName, hide)
+                Log.i(TAG, "setApplicationHidden($packageName,$hide) OK (legacy path)")
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "hideUnhideThisApp failed: ${e.message}")
+        }
+    }
+
+
+
+//    disable usb debugging, usb file transfer, otg, etc.
+// Disable USB file transfer (MTP/PTP)
+fun disableUSBDataTransfer() {
+    if (!isDeviceOwner()) { Log.w(TAG, "disableUSBDataTransfer: not device owner"); return }
+    try {
+        dpm.addUserRestriction(compName, android.os.UserManager.DISALLOW_USB_FILE_TRANSFER)
+        Log.i(TAG, "USB file transfer disabled")
+
+        // Optional: deeper USB signaling block on Android 12+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            dpm.setUsbDataSignalingEnabled(false)
+            Log.i(TAG, "USB data signaling disabled (Android 12+)")
+        }
+    } catch (e: Exception) {
+        Log.w(TAG, "disableUSBDataTransfer failed: ${e.message}")
+    }
+}
+
+    // Enable USB file transfer (optional)
+    fun enableUSBDataTransfer() {
+        if (!isDeviceOwner()) { Log.w(TAG, "enableUSBDataTransfer: not device owner"); return }
+        try {
+            dpm.clearUserRestriction(compName, android.os.UserManager.DISALLOW_USB_FILE_TRANSFER)
+            Log.i(TAG, "USB file transfer enabled")
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                dpm.setUsbDataSignalingEnabled(true)
+                Log.i(TAG, "USB data signaling enabled (Android 12+)")
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "enableUSBDataTransfer failed: ${e.message}")
+        }
+    }
+
+    // Disable USB debugging (ADB)
+    fun disableADB() {
+        if (!isDeviceOwner()) { Log.w(TAG, "disableADB: not device owner"); return }
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                // This works only on some OEMs/devices as a global setting
+                dpm.setGlobalSetting(compName, "adb_enabled", "0")
+                Log.i(TAG, "ADB disabled via global setting")
+            } else {
+                Log.w(TAG, "disableADB: not supported on this Android version")
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "disableADB failed: ${e.message}")
+        }
+    }
+
+    // Enable ADB (optional)
+    fun enableADB() {
+        if (!isDeviceOwner()) { Log.w(TAG, "enableADB: not device owner"); return }
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                dpm.setGlobalSetting(compName, "adb_enabled", "1")
+                Log.i(TAG, "ADB enabled via global setting")
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "enableADB failed: ${e.message}")
+        }
+    }
+
+
+
 }

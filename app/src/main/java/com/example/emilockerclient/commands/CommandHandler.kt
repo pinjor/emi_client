@@ -7,6 +7,7 @@ import android.util.Log
 import com.example.emilockerclient.managers.DeviceControlManager
 import com.example.emilockerclient.network.ServerCommand
 import com.google.gson.Gson
+import kotlin.math.log
 
 object CommandHandler {
     private const val TAG = "CommandHandler"
@@ -32,6 +33,8 @@ object CommandHandler {
             "remove_password", "apply_restrictions",
             "clear_restrictions",
             "set_wallpaper", "remove_wallpaper"
+
+
         )
 
         if (normalized in deviceOwnerRequired && !manager.isDeviceOwner()) {
@@ -46,34 +49,49 @@ object CommandHandler {
         try {
             when (normalized) {
                 "lock_device", "lock" -> {
+                    Log.i(TAG, "Locking device as per command.")
                     val message = cmd.getString("message") ?: "Device locked by admin."
                     manager.showLockScreen(message)
                 }
+
                 "unlock_device", "unlock" -> {
+                    Log.i(TAG, "Unlocking device as per command.")
                     manager.clearLock()
                 }
-                "disable_camera" -> manager.disableCamera()
-                "enable_camera" -> manager.enableCamera()
-                "disable_bluetooth" -> manager.disableBluetooth()
-                "enable_bluetooth" -> manager.enableBluetooth()
+
+                "disable_camera" -> {
+                    Log.i(TAG, "Disabling camera as per command.")
+                    manager.disableCamera()
+                }
+
+                "enable_camera" -> {
+                    Log.i(TAG, "Enabling camera as per command.")
+                    manager.enableCamera()
+                }
+
+                "disable_bluetooth" -> {
+                    Log.i(TAG, "Disabling Bluetooth as per command.")
+                    manager.disableBluetooth()
+                }
+
+                "enable_bluetooth" -> {
+                    Log.i(TAG, "Enabling Bluetooth as per command.")
+                    manager.enableBluetooth()
+                }
+
                 "hide_app" -> {
-                    val pkg = cmd.getString("package_name")
-                    val state = cmd.getBoolean("state", true)
-                    if (pkg != null) manager.hideApp(pkg, state)
-                    else {
-                        reason = "missing_package_name"
-                        status = "FAILED"
-                    }
+                    Log.i(TAG, "Received HIDE_APP command -> hiding current app.")
+                    manager.toggleSelfVisibility(true)
                 }
+
                 "unhide_app" -> {
-                    val pkg = cmd.getString("package_name")
-                    if (pkg != null) manager.hideApp(pkg, false)
-                    else {
-                        reason = "missing_package_name"
-                        status = "FAILED"
-                    }
+                    Log.i(TAG, "Received UNHIDE_APP command -> unhiding current app.")
+                    manager.toggleSelfVisibility(false)
                 }
+
+
                 "remove_app" -> {
+                    Log.i(TAG, "Removing app as per command.")
                     val pkg = cmd.getString("package_name")
                     if (pkg != null) manager.removeApp(pkg)
                     else {
@@ -81,8 +99,14 @@ object CommandHandler {
                         status = "FAILED"
                     }
                 }
-                "reboot_device" -> manager.rebootDevice()
+
+                "reboot_device" -> {
+                    Log.i(TAG, "Rebooting device as per command.")
+                    manager.rebootDevice()
+                }
+
                 "reset_password" -> {
+                    Log.i(TAG, "Resetting device password as per command.")
                     val pwd = cmd.getString("password")
                     if (pwd != null) manager.resetDevicePassword(pwd)
                     else {
@@ -90,8 +114,14 @@ object CommandHandler {
                         status = "FAILED"
                     }
                 }
-                "remove_password" -> manager.clearDevicePassword()
+
+                "remove_password" -> {
+                    Log.i(TAG, "Removing device password as per command.")
+                    manager.clearDevicePassword()
+                }
+
                 "set_wallpaper" -> {
+                    Log.i(TAG, "Setting wallpaper as per command.")
                     val url = cmd.getString("image_url")
                     if (url != null) manager.setWallpaperFromUrl(url)
                     else {
@@ -99,11 +129,17 @@ object CommandHandler {
                         status = "FAILED"
                     }
                 }
-                "remove_wallpaper" -> manager.removeWallpaper()
+
+                "remove_wallpaper" -> {
+                    Log.i(TAG, "Removing wallpaper as per command.")
+                    manager.removeWallpaper()
+                }
+
                 "show_message", "reminder_screen" -> {
                     val message = cmd.getString("message") ?: cmd.getString("title") ?: ""
                     manager.showLockScreen(message)
                 }
+
                 "reminder_audio" -> {
                     val audioUrl = cmd.getString("audio_url")
                     if (audioUrl != null) manager.playAudioReminder(audioUrl)
@@ -112,18 +148,24 @@ object CommandHandler {
                         status = "FAILED"
                     }
                 }
+
                 "request_location" -> {
+                    Log.i(TAG, "Requesting device location as per command.")
                     // manager.requestLocation will fetch and (optionally) send back to server
                     manager.requestLocation { locResult ->
                         // optional: you could send location back as part of ack (not implemented by default)
                         Log.i(TAG, "LOCATION RESULT: $locResult")
                     }
                 }
+
                 "wipe_device" -> {
+                    Log.i(TAG, "Wiping device as per command.")
                     // Very destructive - ensure you want this
                     manager.wipeDevice()
                 }
+
                 else -> {
+
                     Log.w(TAG, "Unknown command: $normalized")
                     status = "FAILED"
                     reason = "unknown_command"
