@@ -303,6 +303,8 @@ class DeviceControlManager(private val context: Context) {
                     "UNKNOWN"
                 }
 
+                Log.i(TAG, "📱 Device ID (Serial): $serial")
+
                 val locationService = LocationService(context)
                 locationService.getCurrentLocation(serial) { locationReq ->
                     if (locationReq == null) {
@@ -312,23 +314,26 @@ class DeviceControlManager(private val context: Context) {
                     }
 
                     // Use existing Retrofit API
-                    Log.i(TAG, "Location obtained: lat=${locationReq.data.latitude}, lon=${locationReq.data.longitude}, accuracy=${locationReq.data.accuracy}m")
-                    Log.i(TAG, "${locationReq.data}")
-                    Log.i(TAG, "Sending location to backend: lat=${locationReq.data.latitude}, lon=${locationReq.data.longitude}")
+                    Log.i(TAG, "📍 Location obtained: lat=${locationReq.data.latitude}, lon=${locationReq.data.longitude}, accuracy=${locationReq.data.accuracy}m")
+                    Log.i(TAG, "📅 Timestamp: ${locationReq.data.timestamp}")
+                    Log.i(TAG, "📤 Sending location to backend...")
+                    Log.i(TAG, "📦 Full payload: device_id=${locationReq.device_id}, command=${locationReq.command}")
+                    Log.i(TAG, "   → data: {lat=${locationReq.data.latitude}, lon=${locationReq.data.longitude}, accuracy=${locationReq.data.accuracy}, timestamp=${locationReq.data.timestamp}}")
+
                     val call = RetrofitClient.api.sendLocationResponse(locationReq)
                     call.enqueue(object : Callback<ApiResponse> {
                         override fun onResponse(call: Call<ApiResponse>, response: Response<ApiResponse>) {
                             if (response.isSuccessful) {
-                                Log.i(TAG, "Location sent successfully: ${response.body()?.message}")
+                                Log.i(TAG, "✅ Location sent successfully: ${response.body()?.message}")
                                 callback("LOCATION_SENT")
                             } else {
-                                Log.w(TAG, "Failed to send location: ${response.code()} ${response.message()}")
+                                Log.w(TAG, "❌ Failed to send location: ${response.code()} ${response.message()}")
                                 callback("FAILED_TO_SEND")
                             }
                         }
 
                         override fun onFailure(call: Call<ApiResponse>, t: Throwable) {
-                            Log.e(TAG, "Network error sending location: ${t.message}")
+                            Log.e(TAG, "🌐 Network error sending location: ${t.message}")
                             callback("NETWORK_ERROR:${t.message}")
                         }
                     })
