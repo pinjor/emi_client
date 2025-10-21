@@ -14,6 +14,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
+import android.os.UserManager
 import android.util.Log
 import androidx.core.content.FileProvider
 import com.example.emilockerclient.admin.EmiAdminReceiver
@@ -170,7 +171,7 @@ class DeviceControlManager(private val context: Context) {
                 enableCamera()
                 enableBluetooth()
                 enableUSBDataTransfer()
-                enableAllCallsAndSMS()
+                enableOutgoingCallAndSMS()
                 Log.i(TAG, "All device features restored to normal")
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to restore device features: ${e.message}")
@@ -310,55 +311,41 @@ class DeviceControlManager(private val context: Context) {
     }
 
 
-//    disable all types of calls and SMS
-fun disableAllCallsAndSMS(){
-    if (!isDeviceOwner()) { Log.w(TAG, "disableAllCallsAndSMS: not device owner"); return }
-    try {
-        dpm.addUserRestriction(compName, android.os.UserManager.DISALLOW_OUTGOING_CALLS)
-        dpm.addUserRestriction(compName, android.os.UserManager.DISALLOW_SMS)
-//        dpm.addUserRestriction(compName, android.os.UserManager.DISALLOW_MMS)
-//        dpm.addUserRestriction(compName, android.os.UserManager.DISALLOW_INCOMING_CALLS)
-        Log.i(TAG, "All calls and SMS disabled")
-    } catch (e: Exception) {
-        Log.w(TAG, "disableAllCallsAndSMS failed: ${e.message}")
+//    disable outgoing calls and sms
+    fun disableOutgoingCallAndSMS(){
+        if (!isDeviceOwner()) {
+            Log.w(TAG, "Cannot block: not device owner")
+            return
+        }
+        try {
+            // Block outgoing calls
+            dpm.addUserRestriction(compName, UserManager.DISALLOW_OUTGOING_CALLS)
+            // Block SMS sending
+            dpm.addUserRestriction(compName, UserManager.DISALLOW_SMS)
+            Log.i(TAG, "Outgoing calls and SMS blocked")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to block outgoing calls/SMS: ${e.message}")
+        }
     }
-}
 
 //    enable all types of calls and SMS
 
-    fun enableAllCallsAndSMS(){
-        if (!isDeviceOwner()) { Log.w(TAG, "enableCallsAndSMS: not device owner"); return }
-
+    fun enableOutgoingCallAndSMS(){
+        if (!isDeviceOwner()) {
+            Log.w(TAG, "Cannot unblock: not device owner")
+            return
+        }
         try {
-            dpm.clearUserRestriction(compName, android.os.UserManager.DISALLOW_OUTGOING_CALLS)
-            dpm.clearUserRestriction(compName, android.os.UserManager.DISALLOW_SMS)
-//            dpm.clearUserRestriction(compName, android.os.UserManager.DISALLOW_MMS)
-//            dpm.clearUserRestriction(compName, android.os.UserManager.DISALLOW_INCOMING_CALL
-//            )
-            Log.i(TAG, "All calls and SMS enabled")
+            // Unblock outgoing calls
+            dpm.clearUserRestriction(compName, UserManager.DISALLOW_OUTGOING_CALLS)
+            // Unblock SMS sending
+            dpm.clearUserRestriction(compName, UserManager.DISALLOW_SMS)
+            Log.i(TAG, "Outgoing calls and SMS unblocked")
         } catch (e: Exception) {
-            Log.w(TAG, "enableAllCallsAndSMS failed: ${e.message}")
+            Log.e(TAG, "Failed to unblock outgoing calls/SMS: ${e.message}")
         }
     }
 
-//    hide/unhide this app fully
-
-    fun hideUnhideThisApp(hide: Boolean) {
-        if (!isDeviceOwner()) { Log.w(TAG, "hideUnhideThisApp: not device owner"); return }
-        try {
-            val packageName = context.packageName
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                dpm.setApplicationHidden(compName, packageName, hide)
-                Log.i(TAG, "setApplicationHidden($packageName,$hide) OK")
-            } else {
-                // setApplicationHidden exists earlier too (API 24+) but be defensive
-                dpm.setApplicationHidden(compName, packageName, hide)
-                Log.i(TAG, "setApplicationHidden($packageName,$hide) OK (legacy path)")
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "hideUnhideThisApp failed: ${e.message}")
-        }
-    }
 
 
 

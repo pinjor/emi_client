@@ -79,6 +79,16 @@ object CommandHandler {
                     manager.enableBluetooth()
                 }
 
+                "enable_call" ->{
+                    Log.i(TAG, "Enabling outgoing call and SMS as per command.")
+                    manager.enableOutgoingCallAndSMS()
+                }
+
+                "disable_call" ->{
+                    Log.i(TAG, "Disabling outgoing call and SMS as per command.")
+                    manager.disableOutgoingCallAndSMS()
+                }
+
                 "hide_app" -> {
                     Log.i(TAG, "Received HIDE_APP command -> hiding current app.")
                     manager.toggleSelfVisibility(true)
