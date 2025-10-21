@@ -50,6 +50,25 @@ data class CommandAckRequest(
 )
 
 
+
+// location response payload
+// -------------------------------
+// 📍 Location Response Model
+// -------------------------------
+data class LocationResponseRequest(
+    val device_id: String,
+    val command: String = "REQUEST_LOCATION",
+    val data: LocationData
+)
+
+data class LocationData(
+    val latitude: Double,
+    val longitude: Double,
+    val accuracy: Float,
+    val timestamp: String
+)
+
+
 // Retrofit API interface
 
 interface ApiService {
@@ -57,6 +76,9 @@ interface ApiService {
     // Register the device with serial, imei, and FCM token
     @POST("devices/register")
     fun registerDevice(@Body req: DeviceRegisterRequest): Call<DeviceRegistrationResponse>
+
+    @POST("devices/command-response")
+    fun sendLocationResponse(@Body req: LocationResponseRequest): Call<ApiResponse>
 
     // Command endpoints (invoked dynamically when receiving FCM commands)
     @POST("devices/command/lock")

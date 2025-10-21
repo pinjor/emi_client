@@ -47,7 +47,7 @@ dependencies {
     // Retrofit + Gson converter
     implementation("com.squareup.retrofit2:retrofit:$retrofitVersion")
     implementation("com.squareup.retrofit2:converter-gson:$retrofitVersion")
-
+    implementation("com.google.android.gms:play-services-location:21.0.1")
     // OkHttp core + logging interceptor (⚠ you missed okhttp core previously)
     implementation("com.squareup.okhttp3:okhttp:$okHttpVersion")
     implementation("com.squareup.okhttp3:logging-interceptor:$okHttpVersion")

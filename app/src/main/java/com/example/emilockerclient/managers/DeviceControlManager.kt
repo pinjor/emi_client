@@ -1,27 +1,25 @@
 // managers/DeviceControlManager.kt
 package com.example.emilockerclient.managers
 
-import android.app.PendingIntent
 import android.app.admin.DevicePolicyManager
-import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
-import android.content.pm.PackageInstaller
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.net.Uri
 import android.os.Build
 import android.os.UserManager
 import android.provider.Settings
 import android.util.Log
-import androidx.core.content.FileProvider
 import com.example.emilockerclient.admin.EmiAdminReceiver
+import com.example.emilockerclient.network.ApiResponse
+import com.example.emilockerclient.network.RetrofitClient
+import com.example.emilockerclient.services.LocationService
 import com.example.emilockerclient.ui.LockScreenActivity
 import com.example.emilockerclient.utils.PrefsHelper
-import java.io.File
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 import java.net.URL
 import kotlin.concurrent.thread
 
@@ -289,25 +287,64 @@ class DeviceControlManager(private val context: Context) {
     }
 
     // Request Location (best-effort): you must ensure location permissions are granted and the device owner policy allows location retrieval.
-    fun requestLocation(callback: (String)->Unit) {
+    fun requestLocation(callback: (String) -> Unit) {
+        if (!isDeviceOwner()) { Log.w(TAG, "Device Owner is not enabled, exiting location fething..."); return }
+
         thread {
             try {
-                Log.i(TAG, "requestLocation(): not yet implemented")
-                Log.w(TAG, "Location retrieval not implemented yet.")
-                // TODO: implement fused location retrieval (FusedLocationProviderClient) and return a JSON string
+                Log.i(TAG, "Fetching device location...")
 
+                // Get device serial number properly
+                val identifierFetcher = DeviceIdentifierFetcher(context, compName)
+                val serial = try {
+                    identifierFetcher.getSerialNumber()
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to get serial number: ${e.message}")
+                    "UNKNOWN"
+                }
 
+                val locationService = LocationService(context)
+                locationService.getCurrentLocation(serial) { locationReq ->
+                    if (locationReq == null) {
+                        Log.w(TAG, "Failed to get location data")
+                        callback("FAILED_TO_GET_LOCATION")
+                        return@getCurrentLocation
+                    }
 
-                callback("LOCATION_NOT_IMPLEMENTED")
+                    // Use existing Retrofit API
+                    Log.i(TAG, "Location obtained: lat=${locationReq.data.latitude}, lon=${locationReq.data.longitude}, accuracy=${locationReq.data.accuracy}m")
+                    Log.i(TAG, "${locationReq.data}")
+                    Log.i(TAG, "Sending location to backend: lat=${locationReq.data.latitude}, lon=${locationReq.data.longitude}")
+                    val call = RetrofitClient.api.sendLocationResponse(locationReq)
+                    call.enqueue(object : Callback<ApiResponse> {
+                        override fun onResponse(call: Call<ApiResponse>, response: Response<ApiResponse>) {
+                            if (response.isSuccessful) {
+                                Log.i(TAG, "Location sent successfully: ${response.body()?.message}")
+                                callback("LOCATION_SENT")
+                            } else {
+                                Log.w(TAG, "Failed to send location: ${response.code()} ${response.message()}")
+                                callback("FAILED_TO_SEND")
+                            }
+                        }
+
+                        override fun onFailure(call: Call<ApiResponse>, t: Throwable) {
+                            Log.e(TAG, "Network error sending location: ${t.message}")
+                            callback("NETWORK_ERROR:${t.message}")
+                        }
+                    })
+                }
+
             } catch (e: Exception) {
-                Log.w(TAG, "requestLocation failed: ${e.message}")
+                Log.e(TAG, "requestLocation() failed: ${e.message}", e)
                 callback("ERROR:${e.message}")
             }
         }
     }
 
 
-//    disable outgoing calls and sms
+
+
+    //    disable outgoing calls and sms
     fun disableOutgoingCallAndSMS(){
         if (!isDeviceOwner()) {
             Log.w(TAG, "Cannot block: not device owner")
