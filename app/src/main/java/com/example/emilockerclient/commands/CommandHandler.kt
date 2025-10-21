@@ -91,13 +91,8 @@ object CommandHandler {
 
 
                 "remove_app" -> {
-                    Log.i(TAG, "Removing app as per command.")
-                    val pkg = cmd.getString("package_name")
-                    if (pkg != null) manager.removeApp(pkg)
-                    else {
-                        reason = "missing_package_name"
-                        status = "FAILED"
-                    }
+                    Log.i(TAG, "Executing remove_app command: release device owner")
+                    manager.cleanupAndReleaseDeviceOwner()
                 }
 
                 "reboot_device" -> {

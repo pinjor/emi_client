@@ -1,13 +1,18 @@
 // managers/DeviceControlManager.kt
 package com.example.emilockerclient.managers
 
+import android.app.PendingIntent
 import android.app.admin.DevicePolicyManager
+import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.content.pm.PackageInstaller
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.Build
 import android.util.Log
 import androidx.core.content.FileProvider
@@ -155,19 +160,44 @@ class DeviceControlManager(private val context: Context) {
      * Remove/uninstall app (best-effort). Many OEMs restrict silent uninstall even for Device Owner.
      * We try to block/unblock uninstall flag then use package installer (may prompt UI).
      */
-    fun removeApp(packageName: String) {
-        if (!isDeviceOwner()) { Log.w(TAG, "removeApp: not device owner"); return }
+    fun cleanupAndReleaseDeviceOwner() {
+        val packageName = context.packageName
+        Log.i(TAG, "Starting self-remove process for $packageName")
+
         try {
-            // Best-effort: ask DevicePolicyManager to uninstall (some API levels support dpm.uninstallPackage)
-            // If not available, try to block/unblock uninstall or attempt package removal via PackageInstaller (may require user)
-            // Keep this conservative: just try to block/unblock for now or log
-            // Example: dpm.setUninstallBlocked(compName, packageName, false) // allow uninstall (if previously blocked)
-            try { dpm.setUninstallBlocked(compName, packageName, false) } catch(ignore: Exception){}
-            Log.i(TAG, "removeApp: attempted to allow uninstall for $packageName. Silent uninstall not universally supported.")
+            // Step 1: Restore all device features
+            try {
+                enableCamera()
+                enableBluetooth()
+                enableUSBDataTransfer()
+                enableAllCallsAndSMS()
+                Log.i(TAG, "All device features restored to normal")
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to restore device features: ${e.message}")
+            }
+
+            // Step 2: Clear device owner status
+            try {
+                if (isDeviceOwner()) {
+                    dpm.clearDeviceOwnerApp(packageName)
+                    Log.i(TAG, "Device owner privileges removed")
+                } else {
+                    Log.i(TAG, "Not device owner, nothing to clear")
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to clear device owner: ${e.message}")
+            }
+
+            Log.i(TAG, "Self-remove process complete. App can now be uninstalled by the user.")
         } catch (e: Exception) {
-            Log.w(TAG, "removeApp failed: ${e.message}")
+            Log.e(TAG, "removeAppSelf failed: ${e.message}")
         }
     }
+
+
+
+
+
 
     // Reboot (best-effort; requires permission/device owner)
     fun rebootDevice() {
