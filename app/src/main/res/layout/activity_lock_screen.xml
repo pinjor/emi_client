@@ -25,6 +25,7 @@
 
         <!-- Title -->
         <TextView
+            android:id="@+id/tvLockTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Device Locked"
@@ -130,37 +131,16 @@
                     android:textSize="15sp"
                     android:layout_marginBottom="16dp" />
 
-                <!-- Contact Buttons -->
-                <LinearLayout
+                <!-- Call Button (WhatsApp removed) -->
+                <Button
+                    android:id="@+id/btnCallSeller"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center">
-
-                    <Button
-                        android:id="@+id/btnCallSeller"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="📱 Call"
-                        android:textColor="#FFFFFF"
-                        android:backgroundTint="#4CAF50"
-                        android:layout_marginEnd="8dp"
-                        android:textSize="14sp"
-                        android:padding="12dp" />
-
-                    <Button
-                        android:id="@+id/btnWhatsApp"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="💬 WhatsApp"
-                        android:textColor="#FFFFFF"
-                        android:backgroundTint="#25D366"
-                        android:textSize="14sp"
-                        android:padding="12dp" />
-
-                </LinearLayout>
+                    android:text="📱 Call Seller"
+                    android:textColor="#FFFFFF"
+                    android:backgroundTint="#4CAF50"
+                    android:textSize="16sp"
+                    android:padding="16dp" />
 
             </LinearLayout>
         </androidx.cardview.widget.CardView>

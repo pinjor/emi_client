@@ -14,7 +14,11 @@ class AirplaneReceiver : BroadcastReceiver() {
 
             if (state) {
                 val manager = DeviceControlManager(context)
-                manager.showLockScreen("⚠️ Airplane Mode enabled! Device locked.")
+                manager.showLockScreen("⚠️ Airplane Mode enabled! Device locked."
+                ,
+                    "Airplane Mode has been enabled on this device. To ensure security and compliance with company policies, the device has been locked. Please disable Airplane Mode and contact your administrator to unlock the device."
+
+                )
 
                 // ✅ Trigger immediate heartbeat/alert
 //                androidx.work.WorkManager.getInstance(context)

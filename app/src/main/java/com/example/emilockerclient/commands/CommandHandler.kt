@@ -51,8 +51,10 @@ object CommandHandler {
             when (normalized) {
                 "lock_device", "lock" -> {
                     Log.i(TAG, "Locking device as per command.")
+                    val title = cmd.getString("title") ?: "Payment Required"
                     val message = cmd.getString("message") ?: "Device locked by admin."
-                    manager.showLockScreen(message)
+
+                    manager.showLockScreen(title, message)
                 }
 
                 "unlock_device", "unlock" -> {
@@ -121,49 +123,51 @@ object CommandHandler {
                     manager.rebootDevice()
                 }
 
-                "reset_password" -> {
-                    Log.i(TAG, "Resetting device password as per command.")
-                    val pwd = cmd.getString("password")
-                    if (pwd != null) manager.resetDevicePassword(pwd)
-                    else {
-                        reason = "missing_password"
-                        status = "FAILED"
-                    }
-                }
-
-                "remove_password" -> {
-                    Log.i(TAG, "Removing device password as per command.")
-                    manager.clearDevicePassword()
-                }
-
-                "set_wallpaper" -> {
-                    Log.i(TAG, "Setting wallpaper as per command.")
-                    val url = cmd.getString("image_url")
-                    if (url != null) manager.setWallpaperFromUrl(url)
-                    else {
-                        reason = "missing_image_url"
-                        status = "FAILED"
-                    }
-                }
-
+//                "reset_password" -> {
+//                    Log.i(TAG, "Resetting device password as per command.")
+//                    val pwd = cmd.getString("password")
+//                    if (pwd != null) manager.resetDevicePassword(pwd)
+//                    else {
+//                        reason = "missing_password"
+//                        status = "FAILED"
+//                    }
+//                }
+//
+//                "remove_password" -> {
+//                    Log.i(TAG, "Removing device password as per command.")
+//                    manager.clearDevicePassword()
+//                }
+//
+//                "set_wallpaper" -> {
+//                    Log.i(TAG, "Setting wallpaper as per command.")
+//                    val url = cmd.getString("image_url")
+//                    if (url != null) manager.setWallpaperFromUrl(url)
+//                    else {
+//                        reason = "missing_image_url"
+//                        status = "FAILED"
+//                    }
+//                }
+//
                 "remove_wallpaper" -> {
                     Log.i(TAG, "Removing wallpaper as per command.")
                     manager.removeWallpaper()
+
+
                 }
 
                 "show_message", "reminder_screen" -> {
                     val message = cmd.getString("message") ?: cmd.getString("title") ?: ""
-                    manager.showLockScreen(message)
+                    manager.showLockScreen("Please Pay the EMI Due",message)
                 }
 
-                "reminder_audio" -> {
-                    val audioUrl = cmd.getString("audio_url")
-                    if (audioUrl != null) manager.playAudioReminder(audioUrl)
-                    else {
-                        reason = "missing_audio_url"
-                        status = "FAILED"
-                    }
-                }
+//                "reminder_audio" -> {
+//                    val audioUrl = cmd.getString("audio_url")
+//                    if (audioUrl != null) manager.playAudioReminder(audioUrl)
+//                    else {
+//                        reason = "missing_audio_url"
+//                        status = "FAILED"
+//                    }
+//                }
 
                 "request_location" -> {
                     Log.i(TAG, "Requesting device location as per command.")
@@ -172,12 +176,6 @@ object CommandHandler {
                         // optional: you could send location back as part of ack (not implemented by default)
                         Log.i(TAG, "LOCATION RESULT: $locResult")
                     }
-                }
-
-                "wipe_device" -> {
-                    Log.i(TAG, "Wiping device as per command.")
-                    // Very destructive - ensure you want this
-                    manager.wipeDevice()
                 }
 
                 else -> {

@@ -34,7 +34,9 @@ class OfflineCheckWorker(appContext: Context, workerParams: WorkerParameters) :
                     "⚠️ Device offline > $OFFLINE_LOCK_HOURS hours → enforcing lock."
                 )
                 val manager = DeviceControlManager(context)
-                manager.showLockScreen("⚠️ No internet/heartbeat for 24h. Device locked.")
+                manager.showLockScreen("⚠️ No internet/heartbeat for 24h. Device locked.",
+                    "To ensure security and compliance with company policies, the device has been locked due to prolonged offline status. Please reconnect to the internet and contact your administrator to unlock the device."
+                    )
             } else {
                 Log.i(
                     "OfflineCheckWorker",

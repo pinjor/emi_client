@@ -35,13 +35,15 @@ class DeviceControlManager(private val context: Context) {
 
     fun lockDevice() = try { dpm.lockNow() } catch (e: Exception) { Log.w(TAG, "lockNow failed: ${e.message}") }
 
-    fun showLockScreen(message: String) {
-        Log.i(TAG, "showLockScreen(): $message")
+    fun showLockScreen(title: String, message: String) {
+        Log.i(TAG, "showLockScreen() - Title: $title, Message: $message")
         try {
             PrefsHelper.setLocked(context, true)
+            PrefsHelper.setLockTitle(context, title)
             PrefsHelper.setLockMessage(context, message)
             val intent = Intent(context, LockScreenActivity::class.java).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                putExtra("LOCK_TITLE", title)
                 putExtra("LOCK_MESSAGE", message)
             }
             context.startActivity(intent)
@@ -65,6 +67,7 @@ class DeviceControlManager(private val context: Context) {
         Log.i(TAG, "clearLock()")
         try {
             PrefsHelper.setLocked(context, false)
+            PrefsHelper.setLockTitle(context, "")
             PrefsHelper.setLockMessage(context, "")
 
             // Stop the lock monitor service
@@ -215,10 +218,6 @@ class DeviceControlManager(private val context: Context) {
     }
 
 
-
-
-
-
     // Reboot (best-effort; requires permission/device owner)
     fun rebootDevice() {
         if (!isDeviceOwner()) { Log.w(TAG, "rebootDevice: not device owner"); return }
@@ -232,161 +231,7 @@ class DeviceControlManager(private val context: Context) {
         }
     }
 
-    // Wipe device (very destructive)
-    fun wipeDevice() {
-        if (!isDeviceOwner()) { Log.w(TAG, "wipeDevice: not device owner"); return }
-        try {
-            dpm.wipeData(0) // this will factory reset the device immediately (very destructive action - use with caution)
-            Log.i(TAG, "wipeData() invoked")
-        } catch (e: Exception) {
-            Log.w(TAG, "wipeDevice failed: ${e.message}")
-        }
-    }
-
-    // Password management
-    fun resetDevicePassword(newPassword: String) {
-        if (!isDeviceOwner()) { Log.w(TAG, "resetDevicePassword: not device owner"); return }
-        try {
-            val success = dpm.resetPassword(newPassword, DevicePolicyManager.RESET_PASSWORD_REQUIRE_ENTRY)
-            Log.i(TAG, "resetPassword invoked -> $success")
-        } catch (e: Exception) {
-            Log.w(TAG, "resetDevicePassword failed: ${e.message}")
-        }
-    }
-
-    fun clearDevicePassword() {
-        if (!isDeviceOwner()) { Log.w(TAG, "clearDevicePassword: not device owner"); return }
-        try {
-            dpm.setPasswordQuality(compName, DevicePolicyManager.PASSWORD_QUALITY_UNSPECIFIED)
-            dpm.resetPassword("", 0)
-            Log.i(TAG, "clearDevicePassword invoked")
-        } catch (e: Exception) {
-            Log.w(TAG, "clearDevicePassword failed: ${e.message}")
-        }
-    }
-
-    // Wallpaper utilities (download + set). Runs on background thread (best-effort).
-    fun setWallpaperFromUrl(url: String) {
-        thread {
-            try {
-                Log.i(TAG, "Downloading wallpaper: $url")
-                val bitmap = BitmapFactory.decodeStream(URL(url).openStream())
-                // DevicePolicyManager has setWallpaper for device owner via setWallpaper(...) on some API
-                // As a fallback we can set the lockscreen/wallpaper via WallpaperManager (may need permissions)
-                val wm = android.app.WallpaperManager.getInstance(context)
-                wm.setBitmap(bitmap)
-                Log.i(TAG, "Wallpaper set from URL")
-            } catch (e: Exception) {
-                Log.w(TAG, "setWallpaperFromUrl failed: ${e.message}")
-            }
-        }
-    }
-
-    fun removeWallpaper() {
-        try {
-            val wm = android.app.WallpaperManager.getInstance(context)
-            wm.clear()
-            Log.i(TAG, "Wallpaper cleared")
-        } catch (e: Exception) {
-            Log.w(TAG, "removeWallpaper failed: ${e.message}")
-        }
-    }
-
-    // Audio reminder: download & play (best-effort). Keep it short and non-blocking.
-    fun playAudioReminder(url: String) {
-        thread {
-            try {
-                Log.i(TAG, "Downloading audio: $url")
-                // TODO: implement secure download and play via MediaPlayer
-                // For now we log the action
-                Log.i(TAG, "Would play audio reminder from: $url")
-            } catch (e: Exception) {
-                Log.w(TAG, "playAudioReminder failed: ${e.message}")
-            }
-        }
-    }
-
-    // Request Location (best-effort): you must ensure location permissions are granted and the device owner policy allows location retrieval.
-    fun requestLocation(callback: (String) -> Unit) {
-        if (!isDeviceOwner()) { Log.w(TAG, "Device Owner is not enabled, exiting location fething..."); return }
-
-        thread {
-            try {
-                Log.i(TAG, "Fetching device location...")
-
-                // Get device serial number properly
-                val identifierFetcher = DeviceIdentifierFetcher(context, compName)
-                val serial = try {
-                    identifierFetcher.getSerialNumber()
-                } catch (e: Exception) {
-                    Log.w(TAG, "Failed to get serial number: ${e.message}")
-                    "UNKNOWN"
-                }
-
-                Log.i(TAG, "📱 Device ID (Serial): $serial")
-
-                val locationService = LocationService(context)
-                locationService.getCurrentLocation(serial) { locationReq ->
-                    if (locationReq == null) {
-                        Log.w(TAG, "Failed to get location data")
-                        callback("FAILED_TO_GET_LOCATION")
-                        return@getCurrentLocation
-                    }
-
-                    // Use existing Retrofit API
-                    Log.i(TAG, "📍 Location obtained: lat=${locationReq.data.latitude}, lon=${locationReq.data.longitude}, accuracy=${locationReq.data.accuracy}m")
-                    Log.i(TAG, "📅 Timestamp: ${locationReq.data.timestamp}")
-                    Log.i(TAG, "📤 Sending location to backend...")
-                    Log.i(TAG, "📦 Full payload: device_id=${locationReq.device_id}, command=${locationReq.command}")
-                    Log.i(TAG, "   → data: {lat=${locationReq.data.latitude}, lon=${locationReq.data.longitude}, accuracy=${locationReq.data.accuracy}, timestamp=${locationReq.data.timestamp}}")
-
-                    val call = RetrofitClient.api.sendLocationResponse(locationReq)
-                    call.enqueue(object : Callback<ApiResponse> {
-                        override fun onResponse(call: Call<ApiResponse>, response: Response<ApiResponse>) {
-                            if (response.isSuccessful) {
-                                Log.i(TAG, "✅ Location sent successfully: ${response.body()?.message}")
-                                callback("LOCATION_SENT")
-                            } else {
-                                Log.w(TAG, "❌ Failed to send location: ${response.code()} ${response.message()}")
-                                callback("FAILED_TO_SEND")
-                            }
-                        }
-
-                        override fun onFailure(call: Call<ApiResponse>, t: Throwable) {
-                            Log.e(TAG, "🌐 Network error sending location: ${t.message}")
-                            callback("NETWORK_ERROR:${t.message}")
-                        }
-                    })
-                }
-
-            } catch (e: Exception) {
-                Log.e(TAG, "requestLocation() failed: ${e.message}", e)
-                callback("ERROR:${e.message}")
-            }
-        }
-    }
-
-
-
-
-    //    disable outgoing calls and sms
-    fun disableOutgoingCallAndSMS(){
-        if (!isDeviceOwner()) {
-            Log.w(TAG, "Cannot block: not device owner")
-            return
-        }
-        try {
-            // Block outgoing calls
-            dpm.addUserRestriction(compName, UserManager.DISALLOW_OUTGOING_CALLS)
-            // Block SMS sending
-            dpm.addUserRestriction(compName, UserManager.DISALLOW_SMS)
-            Log.i(TAG, "Outgoing calls and SMS blocked")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to block outgoing calls/SMS: ${e.message}")
-        }
-    }
-
-//    enable all types of calls and SMS
+    //    enable all types of calls and SMS
 
     fun enableOutgoingCallAndSMS(){
         if (!isDeviceOwner()) {
@@ -403,7 +248,22 @@ class DeviceControlManager(private val context: Context) {
             Log.e(TAG, "Failed to unblock outgoing calls/SMS: ${e.message}")
         }
     }
-
+    //    disable outgoing calls and sms
+    fun disableOutgoingCallAndSMS(){
+        if (!isDeviceOwner()) {
+            Log.w(TAG, "Cannot block: not device owner")
+            return
+        }
+        try {
+            // Block outgoing calls
+            dpm.addUserRestriction(compName, UserManager.DISALLOW_OUTGOING_CALLS)
+            // Block SMS sending
+            dpm.addUserRestriction(compName, UserManager.DISALLOW_SMS)
+            Log.i(TAG, "Outgoing calls and SMS blocked")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to block outgoing calls/SMS: ${e.message}")
+        }
+    }
     // Call to apply restrictions: disable USB file transfer, disable USB data signalling, disable ADB & wireless debugging (best-effort)
     fun applyUsbAdbRestrictions() {
         if (!isDeviceOwner()) {
@@ -482,6 +342,7 @@ class DeviceControlManager(private val context: Context) {
 
     // Call to clear restrictions: enable USB data transfer, enable USB signaling, enable ADB & wireless debugging (best-effort)
     fun clearUsbAdbRestrictions() {
+
         if (!isDeviceOwner()) {
             Log.w(TAG, "clearUsbAdbRestrictions: not device owner")
             return
@@ -490,7 +351,10 @@ class DeviceControlManager(private val context: Context) {
         try {
             // 1) Clear USB file transfer restriction
             try {
-                dpm.clearUserRestriction(compName, android.os.UserManager.DISALLOW_USB_FILE_TRANSFER)
+                dpm.clearUserRestriction(
+                    compName,
+                    android.os.UserManager.DISALLOW_USB_FILE_TRANSFER
+                )
                 Log.i(TAG, "DISALLOW_USB_FILE_TRANSFER cleared")
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to clear DISALLOW_USB_FILE_TRANSFER: ${e.message}")
@@ -504,7 +368,10 @@ class DeviceControlManager(private val context: Context) {
                         Log.i(TAG, "setUsbDataSignalingEnabled(true) invoked")
                     } catch (noMethod: NoSuchMethodError) {
                         try {
-                            val m = DevicePolicyManager::class.java.getMethod("setUsbDataSignalingEnabled", Boolean::class.javaPrimitiveType)
+                            val m = DevicePolicyManager::class.java.getMethod(
+                                "setUsbDataSignalingEnabled",
+                                Boolean::class.javaPrimitiveType
+                            )
                             m.invoke(dpm, true)
                             Log.i(TAG, "setUsbDataSignalingEnabled(true) via reflection")
                         } catch (re: Exception) {
@@ -541,12 +408,320 @@ class DeviceControlManager(private val context: Context) {
                         // ignore
                     }
                 }
-            } catch (_: Exception) {}
+            } catch (_: Exception) {
+            }
 
             Log.i(TAG, "clearUsbAdbRestrictions complete (best-effort).")
         } catch (e: Exception) {
             Log.e(TAG, "clearUsbAdbRestrictions failed: ${e.message}")
         }
     }
+
+    /**
+     * Set/Reset device password (screen lock).
+     *
+     * IMPORTANT: Password reset has severe limitations on Android 8.0+ (API 26+):
+     * - Token-based reset is BLOCKED on primary user (user 0) with "Escrow token is disabled"
+     * - Legacy resetPassword() is deprecated and blocked
+     *
+     * WORKAROUND: We use setRequiredPasswordComplexity() + user prompt approach
+     *
+     * Password Constraints (Android enforced):
+     * - Minimum length: 4 characters
+     * - Maximum length: 16 characters
+     * - For NUMERIC: Must be digits only (0-9)
+     * - For ALPHABETIC/ALPHANUMERIC: Can contain letters, numbers, symbols
+     *
+     * @param newPassword The password to set
+     * @return True if password was set successfully, false otherwise
+     */
+//    fun resetDevicePassword(newPassword: String): Boolean {
+//        if (!isDeviceOwner()) {
+//            Log.w(TAG, "resetDevicePassword: not device owner")
+//            return false
+//        }
+//
+//        // Validate password length
+//        if (newPassword.isNotEmpty() && newPassword.length < 4) {
+//            Log.w(TAG, "❌ Password too short. Minimum length is 4 characters.")
+//            return false
+//        }
+//
+//        if (newPassword.length > 16) {
+//            Log.w(TAG, "❌ Password too long. Maximum length is 16 characters.")
+//            return false
+//        }
+//
+//        try {
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+//                // Android 8.0+ (API 26+)
+//                Log.w(TAG, "⚠️ Password reset via API is BLOCKED on Android 8.0+ for primary user")
+//                Log.w(TAG, "   Android restricts password token on user 0 with 'Escrow token is disabled'")
+//                Log.w(TAG, "   This is a fundamental Android security limitation.")
+//                Log.w(TAG, "")
+//                Log.w(TAG, "WORKAROUND OPTIONS:")
+//                Log.w(TAG, "1. Use Settings Intent to prompt user to set password manually")
+//                Log.w(TAG, "2. Set password complexity requirements instead")
+//                Log.w(TAG, "3. Factory reset device and set password during OOBE (out of box experience)")
+//
+//                // WORKAROUND: Set password complexity requirement
+//                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+//                    try {
+//                        // Android 12+ (API 31+): Use password complexity
+//                        val complexity = when {
+//                            newPassword.isEmpty() -> DevicePolicyManager.PASSWORD_COMPLEXITY_NONE
+//                            newPassword.length >= 8 -> DevicePolicyManager.PASSWORD_COMPLEXITY_HIGH
+//                            newPassword.length >= 6 -> DevicePolicyManager.PASSWORD_COMPLEXITY_MEDIUM
+//                            else -> DevicePolicyManager.PASSWORD_COMPLEXITY_LOW
+//                        }
+//
+//                        dpm.requiredPasswordComplexity = complexity
+//                        Log.i(TAG, "✅ Set password complexity requirement to: $complexity")
+//                        Log.i(TAG, "   User will be prompted to set a password meeting this complexity")
+//
+//                        // Launch settings to let user set password
+//                        launchPasswordSetupIntent()
+//                        return true
+//
+//                    } catch (e: Exception) {
+//                        Log.w(TAG, "Failed to set password complexity: ${e.message}")
+//                    }
+//                }
+//
+//                // Fallback: Launch password setup screen
+//                Log.i(TAG, "Launching password setup screen for user...")
+//                launchPasswordSetupIntent()
+//                return true
+//
+//            } else {
+//                // Android 7.1 and below: Use legacy resetPassword (still works)
+//                Log.i(TAG, "Using legacy resetPassword method (API < 26)...")
+//
+//                @Suppress("DEPRECATION")
+//                val success = dpm.resetPassword(newPassword, DevicePolicyManager.RESET_PASSWORD_REQUIRE_ENTRY)
+//
+//                if (success) {
+//                    Log.i(TAG, "✅ Password set successfully using legacy method")
+//                    return true
+//                } else {
+//                    Log.w(TAG, "⚠️ Legacy resetPassword returned false")
+//                    return false
+//                }
+//            }
+//
+//        } catch (e: SecurityException) {
+//            Log.e(TAG, "❌ SecurityException setting password: ${e.message}")
+//            Log.e(TAG, "   This is expected on Android 8.0+ primary user")
+//            return false
+//        } catch (e: Exception) {
+//            Log.e(TAG, "❌ resetDevicePassword failed: ${e.message}", e)
+//            return false
+//        }
+//    }
+//
+//    /**
+//     * Launch system password setup screen
+//     */
+//    private fun launchPasswordSetupIntent() {
+//        try {
+//            val intent = Intent(android.provider.Settings.ACTION_SECURITY_SETTINGS)
+//            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+//            context.startActivity(intent)
+//            Log.i(TAG, "✅ Launched password setup screen")
+//        } catch (e: Exception) {
+//            Log.w(TAG, "Failed to launch password setup: ${e.message}")
+//        }
+//    }
+//
+//    /**
+//     * Clear/remove device password (screen lock).
+//     *
+//     * IMPORTANT: Password reset has severe limitations on Android 8.0+ (API 26+):
+//     * - Token-based reset is BLOCKED on primary user (user 0) with "Escrow token is disabled"
+//     * - This is a fundamental Android security restriction
+//     *
+//     * WORKAROUND: We set password complexity to NONE and launch Settings
+//     */
+//    fun clearDevicePassword() {
+//        if (!isDeviceOwner()) {
+//            Log.w(TAG, "clearDevicePassword: not device owner")
+//            return
+//        }
+//
+//        try {
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+//                // Android 8.0+ (API 26+)
+//                Log.w(TAG, "⚠️ Password clear via API is BLOCKED on Android 8.0+ for primary user")
+//                Log.w(TAG, "   Android restricts password token on user 0 with 'Escrow token is disabled'")
+//                Log.w(TAG, "")
+//
+//                // WORKAROUND: Set password complexity to NONE
+//                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+//                    try {
+//                        dpm.requiredPasswordComplexity = DevicePolicyManager.PASSWORD_COMPLEXITY_NONE
+//                        Log.i(TAG, "✅ Set password complexity to NONE")
+//                    } catch (e: Exception) {
+//                        Log.w(TAG, "Could not set password complexity: ${e.message}")
+//                    }
+//                }
+//
+//                // Try to set password quality to UNSPECIFIED (allows user to remove password)
+//                try {
+//                    @Suppress("DEPRECATION")
+//                    dpm.setPasswordQuality(compName, DevicePolicyManager.PASSWORD_QUALITY_UNSPECIFIED)
+//                    Log.i(TAG, "✅ Password quality set to UNSPECIFIED")
+//                    Log.i(TAG, "   User can now remove password from Settings")
+//                } catch (e: Exception) {
+//                    Log.w(TAG, "Could not set password quality: ${e.message}")
+//                }
+//
+//                // Launch settings for user to remove password manually
+//                Log.i(TAG, "Launching security settings for user to remove password...")
+//                launchPasswordSetupIntent()
+//
+//            } else {
+//                // Android 7.1 and below: Use legacy resetPassword (still works)
+//                Log.i(TAG, "Using legacy resetPassword method (API < 26)...")
+//
+//                @Suppress("DEPRECATION")
+//                dpm.setPasswordQuality(compName, DevicePolicyManager.PASSWORD_QUALITY_UNSPECIFIED)
+//
+//                @Suppress("DEPRECATION")
+//                val success = dpm.resetPassword("", 0)
+//
+//                if (success) {
+//                    Log.i(TAG, "✅ Password cleared successfully using legacy method")
+//                } else {
+//                    Log.w(TAG, "⚠️ Legacy resetPassword returned false")
+//                }
+//            }
+//
+//        } catch (e: SecurityException) {
+//            Log.e(TAG, "❌ SecurityException clearing password: ${e.message}")
+//            Log.e(TAG, "   This is expected on Android 8.0+ primary user")
+//        } catch (e: Exception) {
+//            Log.e(TAG, "❌ clearDevicePassword failed: ${e.message}", e)
+//        }
+//    }
+//
+//    /**
+//     * Fallback method: Set password quality to UNSPECIFIED to allow user to remove password.
+//     */
+//    private fun tryFallbackPasswordClear() {
+//        try {
+//            Log.i(TAG, "Attempting fallback: Setting password quality to UNSPECIFIED...")
+//            @Suppress("DEPRECATION")
+//            dpm.setPasswordQuality(compName, DevicePolicyManager.PASSWORD_QUALITY_UNSPECIFIED)
+//            Log.i(TAG, "✅ Password quality set to UNSPECIFIED (user can now remove password manually)")
+//        } catch (e: Exception) {
+//            Log.w(TAG, "Fallback also failed: ${e.message}")
+//        }
+//    }
+//
+//    // Wallpaper utilities (download + set). Runs on background thread (best-effort).
+//    fun setWallpaperFromUrl(url: String) {
+//        thread {
+//            try {
+//                Log.i(TAG, "Downloading wallpaper: $url")
+//                val bitmap = BitmapFactory.decodeStream(URL(url).openStream())
+//                // DevicePolicyManager has setWallpaper for device owner via setWallpaper(...) on some API
+//                // As a fallback we can set the lockscreen/wallpaper via WallpaperManager (may need permissions)
+//                val wm = android.app.WallpaperManager.getInstance(context)
+//                wm.setBitmap(bitmap)
+//                Log.i(TAG, "Wallpaper set from URL")
+//            } catch (e: Exception) {
+//                Log.w(TAG, "setWallpaperFromUrl failed: ${e.message}")
+//            }
+//        }
+//    }
+//
+    fun removeWallpaper() {
+        try {
+            val wm = android.app.WallpaperManager.getInstance(context)
+            wm.clear()
+            Log.i(TAG, "Wallpaper cleared")
+        } catch (e: Exception) {
+            Log.w(TAG, "removeWallpaper failed: ${e.message}")
+        }
+    }
+//
+//    // Audio reminder: download & play (best-effort). Keep it short and non-blocking.
+//    fun playAudioReminder(url: String) {
+//        thread {
+//            try {
+//                Log.i(TAG, "Downloading audio: $url")
+//                // TODO: implement secure download and play via MediaPlayer
+//                // For now we log the action
+//                Log.i(TAG, "Would play audio reminder from: $url")
+//            } catch (e: Exception) {
+//                Log.w(TAG, "playAudioReminder failed: ${e.message}")
+//            }
+//        }
+//    }
+
+    // Request Location (best-effort): you must ensure location permissions are granted and the device owner policy allows location retrieval.
+    fun requestLocation(callback: (String) -> Unit) {
+        if (!isDeviceOwner()) { Log.w(TAG, "Device Owner is not enabled, exiting location fething..."); return }
+
+        thread {
+            try {
+                Log.i(TAG, "Fetching device location...")
+
+                // Get device serial number properly
+                val identifierFetcher = DeviceIdentifierFetcher(context, compName)
+                val serial = try {
+                    identifierFetcher.getSerialNumber()
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to get serial number: ${e.message}")
+                    "UNKNOWN"
+                }
+
+                Log.i(TAG, "📱 Device ID (Serial): $serial")
+
+                val locationService = LocationService(context)
+                locationService.getCurrentLocation(serial) { locationReq ->
+                    if (locationReq == null) {
+                        Log.w(TAG, "Failed to get location data")
+                        callback("FAILED_TO_GET_LOCATION")
+                        return@getCurrentLocation
+                    }
+
+                    // Use existing Retrofit API
+                    Log.i(TAG, "📍 Location obtained: lat=${locationReq.data.latitude}, lon=${locationReq.data.longitude}, accuracy=${locationReq.data.accuracy}m")
+                    Log.i(TAG, "📅 Timestamp: ${locationReq.data.timestamp}")
+                    Log.i(TAG, "📤 Sending location to backend...")
+                    Log.i(TAG, "📦 Full payload: device_id=${locationReq.device_id}, command=${locationReq.command}")
+                    Log.i(TAG, "   → data: {lat=${locationReq.data.latitude}, lon=${locationReq.data.longitude}, accuracy=${locationReq.data.accuracy}, timestamp=${locationReq.data.timestamp}}")
+
+                    val call = RetrofitClient.api.sendLocationResponse(locationReq)
+                    call.enqueue(object : Callback<ApiResponse> {
+                        override fun onResponse(call: Call<ApiResponse>, response: Response<ApiResponse>) {
+                            if (response.isSuccessful) {
+                                Log.i(TAG, "✅ Location sent successfully: ${response.body()?.message}")
+                                callback("LOCATION_SENT")
+                            } else {
+                                Log.w(TAG, "❌ Failed to send location: ${response.code()} ${response.message()}")
+                                callback("FAILED_TO_SEND")
+                            }
+                        }
+
+                        override fun onFailure(call: Call<ApiResponse>, t: Throwable) {
+                            Log.e(TAG, "🌐 Network error sending location: ${t.message}")
+                            callback("NETWORK_ERROR:${t.message}")
+                        }
+                    })
+                }
+
+            } catch (e: Exception) {
+                Log.e(TAG, "requestLocation() failed: ${e.message}", e)
+                callback("ERROR:${e.message}")
+            }
+        }
+    }
+
+
+
+
+
 
 }

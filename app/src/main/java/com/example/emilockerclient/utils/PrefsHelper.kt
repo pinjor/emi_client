@@ -7,6 +7,7 @@ object PrefsHelper {
 
     private const val PREFS_NAME = "emi_prefs"
     private const val KEY_LOCKED = "locked"
+    private const val KEY_LOCK_TITLE = "lock_title"
     private const val KEY_LOCK_MSG = "lock_message"
     private const val KEY_LAST_HEARTBEAT = "last_heartbeat"
 
@@ -19,6 +20,14 @@ object PrefsHelper {
 
     fun isLocked(context: Context): Boolean {
         return prefs(context).getBoolean(KEY_LOCKED, false)
+    }
+
+    fun setLockTitle(context: Context, title: String) {
+        prefs(context).edit().putString(KEY_LOCK_TITLE, title).apply()
+    }
+
+    fun getLockTitle(context: Context): String {
+        return prefs(context).getString(KEY_LOCK_TITLE, "Payment Required") ?: "Payment Required"
     }
 
     fun setLockMessage(context: Context, message: String) {

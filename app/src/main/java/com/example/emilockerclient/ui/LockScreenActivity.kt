@@ -26,7 +26,9 @@ class LockScreenActivity : AppCompatActivity() {
     private val TAG = "LockScreenActivity"
 
     private var isInDialer = false
+    private var dialerOpenTime = 0L
     private val handler = Handler(Looper.getMainLooper())
+    private val DIALER_GRACE_PERIOD = 10000000L // the time is in milliseconds (10 seconds)
 
     private val unlockReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -39,16 +41,20 @@ class LockScreenActivity : AppCompatActivity() {
         override fun onCallStateChanged(state: Int, phoneNumber: String?) {
             when (state) {
                 TelephonyManager.CALL_STATE_IDLE -> {
-                    // Call ended, return to lock screen after 3 seconds
-                    if (isInDialer) {
-                        android.util.Log.i(TAG, "Call ended, returning to lock screen in 3s")
-                        handler.postDelayed({
-                            bringToFront()
-                        }, 3000)
-                    }
+                    // Call ended, return to lock screen after 10 seconds
+                    android.util.Log.i(TAG, "Call ended, returning to lock screen in 10s")
+                    handler.postDelayed({
+                        isInDialer = false
+                        dialerOpenTime = 0L
+                        bringToFront()
+                    }, 10000) // 10 seconds after call ends
                 }
                 TelephonyManager.CALL_STATE_OFFHOOK, TelephonyManager.CALL_STATE_RINGING -> {
+                    // Call is active
+                    android.util.Log.i(TAG, "Call is active, extending dialer time")
                     isInDialer = true
+                    // Extend the grace period while call is active
+                    dialerOpenTime = System.currentTimeMillis()
                 }
             }
         }
@@ -116,6 +122,10 @@ class LockScreenActivity : AppCompatActivity() {
     }
 
     private fun setupUI() {
+        // Display lock title from Intent or SharedPreferences
+        val title = intent.getStringExtra("LOCK_TITLE") ?: PrefsHelper.getLockTitle(this)
+        findViewById<TextView>(R.id.tvLockTitle).text = title
+
         // Display lock message from Intent or SharedPreferences
         val message = intent.getStringExtra("LOCK_MESSAGE") ?: PrefsHelper.getLockMessage(this)
         findViewById<TextView>(R.id.tvLockMessage).text = message
@@ -127,56 +137,52 @@ class LockScreenActivity : AppCompatActivity() {
         // Call Seller button
         findViewById<Button>(R.id.btnCallSeller).setOnClickListener {
             val phoneNumber = "+8801712345678" // TODO: Get from backend
-            makeCall(phoneNumber)
-        }
-
-        // WhatsApp button
-        findViewById<Button>(R.id.btnWhatsApp).setOnClickListener {
-            val phoneNumber = "+8801712345678" // TODO: Get from backend
-            openWhatsApp(phoneNumber)
+            openDialer(phoneNumber)
         }
 
         // Emergency call button (999)
         findViewById<Button>(R.id.btnEmergency).setOnClickListener {
-            makeCall("999")
+            openDialer("999")
         }
     }
 
-    private fun makeCall(phoneNumber: String) {
+    private fun openDialer(phoneNumber: String) {
         try {
-            val dialIntent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phoneNumber"))
-            dialIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            android.util.Log.i(TAG, "Opening dialer for: $phoneNumber")
+
+            // Set flag BEFORE opening dialer - CRITICAL!
             isInDialer = true
+            dialerOpenTime = System.currentTimeMillis()
+
+            // Cancel any pending relaunch attempts
+            handler.removeCallbacksAndMessages(null)
+
+            val dialIntent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phoneNumber"))
+            dialIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             startActivity(dialIntent)
 
-            // Schedule to bring lock screen back after 2 seconds
-            handler.postDelayed({
-                bringToFront()
-            }, 2000)
+            android.util.Log.i(TAG, "Dialer opened successfully, grace period starts now")
 
-            android.util.Log.i(TAG, "Dialer opened for: $phoneNumber")
+            // Schedule grace period check (2 minutes)
+            handler.postDelayed({
+                checkDialerGracePeriod()
+            }, DIALER_GRACE_PERIOD)
+
         } catch (e: Exception) {
             android.util.Log.e(TAG, "Failed to open dialer: ${e.message}")
+            isInDialer = false
+            dialerOpenTime = 0L
         }
     }
 
-    private fun openWhatsApp(phoneNumber: String) {
-        try {
-            val cleanNumber = phoneNumber.replace("+", "").replace(" ", "")
-            val whatsappIntent = Intent(Intent.ACTION_VIEW)
-            whatsappIntent.data = Uri.parse("https://wa.me/$cleanNumber")
-            whatsappIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            isInDialer = true
-            startActivity(whatsappIntent)
-
-            // Schedule to bring lock screen back
-            handler.postDelayed({
-                bringToFront()
-            }, 2000)
-
-            android.util.Log.i(TAG, "WhatsApp opened for: $phoneNumber")
-        } catch (e: Exception) {
-            android.util.Log.e(TAG, "Failed to open WhatsApp: ${e.message}")
+    private fun checkDialerGracePeriod() {
+        // If grace period expired and no active call, bring lock screen back
+        val timeSinceOpen = System.currentTimeMillis() - dialerOpenTime
+        if (isInDialer && timeSinceOpen >= DIALER_GRACE_PERIOD) {
+            android.util.Log.i(TAG, "Dialer grace period expired (2 min), returning to lock screen")
+            isInDialer = false
+            dialerOpenTime = 0L
+            bringToFront()
         }
     }
 
@@ -196,25 +202,53 @@ class LockScreenActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        android.util.Log.i(TAG, "onResume()")
-        isInDialer = false
+        android.util.Log.i(TAG, "onResume() - isInDialer=$isInDialer")
+
+        // Only reset dialer flag if enough time has passed and user came back naturally
+        if (isInDialer) {
+            val timeSinceOpen = System.currentTimeMillis() - dialerOpenTime
+            if (timeSinceOpen > 5000) { // 5 seconds - user came back naturally
+                android.util.Log.i(TAG, "User returned from dialer naturally after ${timeSinceOpen}ms")
+                isInDialer = false
+                dialerOpenTime = 0L
+            } else {
+                android.util.Log.i(TAG, "Ignoring onResume - just opened dialer (${timeSinceOpen}ms ago)")
+            }
+        }
     }
 
     override fun onPause() {
         super.onPause()
-        android.util.Log.i(TAG, "onPause()")
+        android.util.Log.i(TAG, "onPause() - isInDialer=$isInDialer, locked=${PrefsHelper.isLocked(this)}")
 
-        // If user navigated away and device is still locked, relaunch immediately
-        if (PrefsHelper.isLocked(this) && !isInDialer) {
+        // CRITICAL: Completely skip relaunch if user is in dialer
+        if (isInDialer) {
+            android.util.Log.i(TAG, "User is in dialer - NOT relaunching lock screen")
+            return
+        }
+
+        // Only relaunch if device is locked AND user is NOT in dialer
+        if (PrefsHelper.isLocked(this)) {
+            android.util.Log.i(TAG, "Device locked and user NOT in dialer - scheduling relaunch in 2s")
             handler.postDelayed({
-                bringToFront()
-            }, 500)
+                if (!isInDialer) {
+                    android.util.Log.i(TAG, "Executing delayed relaunch")
+                    bringToFront()
+                } else {
+                    android.util.Log.i(TAG, "Cancelled relaunch - user now in dialer")
+                }
+            }, 2000) // 2 seconds delay for normal navigation blocking
         }
     }
 
     override fun onStop() {
         super.onStop()
-        android.util.Log.i(TAG, "onStop()")
+        android.util.Log.i(TAG, "onStop() - isInDialer=$isInDialer")
+
+        // Don't do anything if user is in dialer
+        if (isInDialer) {
+            android.util.Log.i(TAG, "User in dialer - allowing activity to stop")
+        }
     }
 
     override fun onNewIntent(intent: Intent) {

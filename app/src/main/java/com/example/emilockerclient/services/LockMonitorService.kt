@@ -25,7 +25,7 @@ class LockMonitorService : Service() {
     companion object {
         private const val CHANNEL_ID = "emi_lock_monitor_channel"
         private const val NOTIF_ID = 1002
-        private const val CHECK_INTERVAL = 2000L // Check every 2 seconds
+        private const val CHECK_INTERVAL = 3000L // Check every 3 seconds (increased from 2)
         private const val TAG = "LockMonitorService"
     }
 
@@ -39,7 +39,8 @@ class LockMonitorService : Service() {
             try {
                 // Check if device is still in locked state
                 if (PrefsHelper.isLocked(this@LockMonitorService)) {
-                    // Relaunch lock screen activity to ensure it's always on top
+                    // Check if user might be in dialer/WhatsApp by checking if lock screen activity exists
+                    // We'll be gentle here - only relaunch if truly needed
                     val message = PrefsHelper.getLockMessage(this@LockMonitorService)
                     val lockIntent = Intent(this@LockMonitorService, LockScreenActivity::class.java).apply {
                         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or
@@ -47,6 +48,8 @@ class LockMonitorService : Service() {
                                 Intent.FLAG_ACTIVITY_SINGLE_TOP)
                         putExtra("LOCK_MESSAGE", message)
                     }
+
+                    // The activity itself will check isInDialer flag and handle appropriately
                     startActivity(lockIntent)
                 } else {
                     // Device is no longer locked, stop monitoring
@@ -125,4 +128,3 @@ class LockMonitorService : Service() {
         }
     }
 }
-

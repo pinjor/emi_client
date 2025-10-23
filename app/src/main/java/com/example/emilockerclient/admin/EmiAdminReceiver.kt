@@ -24,11 +24,15 @@ class EmiAdminReceiver : DeviceAdminReceiver() {
             // the admin Google account(s) are already added and synced. It's safer to call
             // setAccountManagementDisabled from provisioning flow after account added.
         }
+        if(dpm.isDeviceOwnerApp(context.packageName)){
+            Toast.makeText(context, "ImeLocker is now Device Owner!", Toast.LENGTH_SHORT).show()
+        }else{
+            Toast.makeText(context, "ImeLocker is now Admin!", Toast.LENGTH_SHORT).show()
 
-        Toast.makeText(context, "EMI Admin Enabled", Toast.LENGTH_SHORT).show()
+        }
     }
 
     override fun onDisabled(context: Context, intent: Intent) {
-        Toast.makeText(context, "EMI Admin Disabled", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, "..admin disabled..", Toast.LENGTH_SHORT).show()
     }
 }
