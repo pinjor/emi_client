@@ -39,18 +39,30 @@ class LockMonitorService : Service() {
             try {
                 // Check if device is still in locked state
                 if (PrefsHelper.isLocked(this@LockMonitorService)) {
-                    // Check if user might be in dialer/WhatsApp by checking if lock screen activity exists
-                    // We'll be gentle here - only relaunch if truly needed
+
+                    // 🔑 KEY CHECK: Don't relaunch if user is in dialer/making calls
+                    if (PrefsHelper.isDialerActive(this@LockMonitorService)) {
+                        Log.i(TAG, "✅ Dialer is active - skipping lock screen relaunch")
+                        // Schedule next check and return early
+                        if (isMonitoring) {
+                            handler.postDelayed(this, CHECK_INTERVAL)
+                        }
+                        return
+                    }
+
+                    // User is NOT in dialer - relaunch lock screen
+                    val title = PrefsHelper.getLockTitle(this@LockMonitorService)
                     val message = PrefsHelper.getLockMessage(this@LockMonitorService)
                     val lockIntent = Intent(this@LockMonitorService, LockScreenActivity::class.java).apply {
                         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or
                                 Intent.FLAG_ACTIVITY_CLEAR_TOP or
                                 Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                        putExtra("LOCK_TITLE", title)
                         putExtra("LOCK_MESSAGE", message)
                     }
 
-                    // The activity itself will check isInDialer flag and handle appropriately
                     startActivity(lockIntent)
+                    Log.d(TAG, "🔒 Lock screen relaunched")
                 } else {
                     // Device is no longer locked, stop monitoring
                     Log.i(TAG, "Device unlocked, stopping monitor service")

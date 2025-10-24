@@ -25,10 +25,7 @@ class LockScreenActivity : AppCompatActivity() {
     private val UNLOCK_ACTION = "com.example.emilockerclient.ACTION_UNLOCK"
     private val TAG = "LockScreenActivity"
 
-    private var isInDialer = false
-    private var dialerOpenTime = 0L
     private val handler = Handler(Looper.getMainLooper())
-    private val DIALER_GRACE_PERIOD = 10000000L // the time is in milliseconds (10 seconds)
 
     private val unlockReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -41,20 +38,23 @@ class LockScreenActivity : AppCompatActivity() {
         override fun onCallStateChanged(state: Int, phoneNumber: String?) {
             when (state) {
                 TelephonyManager.CALL_STATE_IDLE -> {
-                    // Call ended, return to lock screen after 10 seconds
-                    android.util.Log.i(TAG, "Call ended, returning to lock screen in 10s")
+                    // Call ended - wait 10 seconds then deactivate dialer mode
+                    android.util.Log.i(TAG, "📞 Call ended, deactivating dialer mode in 10 seconds...")
                     handler.postDelayed({
-                        isInDialer = false
-                        dialerOpenTime = 0L
-                        bringToFront()
-                    }, 10000) // 10 seconds after call ends
+                        android.util.Log.i(TAG, "⏰ 10 seconds passed, setting dialerActive = false")
+                        PrefsHelper.setDialerActive(this@LockScreenActivity, false)
+                        // Lock screen will be relaunched by LockMonitorService automatically
+                    }, 10000) // 10 seconds grace period after call ends
                 }
-                TelephonyManager.CALL_STATE_OFFHOOK, TelephonyManager.CALL_STATE_RINGING -> {
-                    // Call is active
-                    android.util.Log.i(TAG, "Call is active, extending dialer time")
-                    isInDialer = true
-                    // Extend the grace period while call is active
-                    dialerOpenTime = System.currentTimeMillis()
+                TelephonyManager.CALL_STATE_OFFHOOK -> {
+                    // Call is active (user picked up or made a call)
+                    android.util.Log.i(TAG, "📞 Call is ACTIVE (OFFHOOK)")
+                    PrefsHelper.setDialerActive(this@LockScreenActivity, true)
+                }
+                TelephonyManager.CALL_STATE_RINGING -> {
+                    // Incoming call ringing
+                    android.util.Log.i(TAG, "📞 Call is RINGING")
+                    PrefsHelper.setDialerActive(this@LockScreenActivity, true)
                 }
             }
         }
@@ -151,91 +151,74 @@ class LockScreenActivity : AppCompatActivity() {
             android.util.Log.i(TAG, "Opening dialer for: $phoneNumber")
 
             // Set flag BEFORE opening dialer - CRITICAL!
-            isInDialer = true
-            dialerOpenTime = System.currentTimeMillis()
+            PrefsHelper.setDialerActive(this, true)
 
-            // Cancel any pending relaunch attempts
-            handler.removeCallbacksAndMessages(null)
+            // Schedule a fallback check in case user dismisses dialer without calling
+            // This handles the edge case where user opens dialer but doesn't make a call
+            handler.postDelayed({
+                // Check if user is back in lock screen but no call was made
+                if (PrefsHelper.isDialerActive(this)) {
+                    android.util.Log.w(TAG, "⚠️ Dialer was opened but no call detected - resetting dialer state")
+                    PrefsHelper.setDialerActive(this, false)
+                }
+            }, 30000) // 30 seconds timeout - if no call in 30s, assume user dismissed dialer
 
             val dialIntent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phoneNumber"))
             dialIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             startActivity(dialIntent)
 
-            android.util.Log.i(TAG, "Dialer opened successfully, grace period starts now")
-
-            // Schedule grace period check (2 minutes)
-            handler.postDelayed({
-                checkDialerGracePeriod()
-            }, DIALER_GRACE_PERIOD)
+            android.util.Log.i(TAG, "✅ Dialer opened successfully, 30s timeout started")
 
         } catch (e: Exception) {
             android.util.Log.e(TAG, "Failed to open dialer: ${e.message}")
-            isInDialer = false
-            dialerOpenTime = 0L
-        }
-    }
-
-    private fun checkDialerGracePeriod() {
-        // If grace period expired and no active call, bring lock screen back
-        val timeSinceOpen = System.currentTimeMillis() - dialerOpenTime
-        if (isInDialer && timeSinceOpen >= DIALER_GRACE_PERIOD) {
-            android.util.Log.i(TAG, "Dialer grace period expired (2 min), returning to lock screen")
-            isInDialer = false
-            dialerOpenTime = 0L
-            bringToFront()
-        }
-    }
-
-    private fun bringToFront() {
-        // Check if still locked
-        if (PrefsHelper.isLocked(this)) {
-            val intent = Intent(this, LockScreenActivity::class.java).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or
-                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                        Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                putExtra("LOCK_MESSAGE", PrefsHelper.getLockMessage(this@LockScreenActivity))
-            }
-            startActivity(intent)
-            android.util.Log.i(TAG, "Lock screen brought back to front")
+            PrefsHelper.setDialerActive(this, false)
         }
     }
 
     override fun onResume() {
         super.onResume()
-        android.util.Log.i(TAG, "onResume() - isInDialer=$isInDialer")
+        android.util.Log.i(TAG, "onResume() - dialerActive=${PrefsHelper.isDialerActive(this)}")
 
-        // Only reset dialer flag if enough time has passed and user came back naturally
-        if (isInDialer) {
-            val timeSinceOpen = System.currentTimeMillis() - dialerOpenTime
-            if (timeSinceOpen > 5000) { // 5 seconds - user came back naturally
-                android.util.Log.i(TAG, "User returned from dialer naturally after ${timeSinceOpen}ms")
-                isInDialer = false
-                dialerOpenTime = 0L
-            } else {
-                android.util.Log.i(TAG, "Ignoring onResume - just opened dialer (${timeSinceOpen}ms ago)")
-            }
+        // CRITICAL FIX: If user returns to lock screen without making a call, reset dialer state
+        // This handles the edge case where user opens dialer → dismisses it → tries other apps
+        if (PrefsHelper.isDialerActive(this)) {
+            android.util.Log.i(TAG, "⚠️ User returned to lock screen while dialerActive=true")
+            android.util.Log.i(TAG, "   Checking if a call was actually made...")
+
+            // Give a grace period (3 seconds) for PhoneStateListener to update
+            handler.postDelayed({
+                // If still dialerActive after 3 seconds, means no call was made
+                if (PrefsHelper.isDialerActive(this@LockScreenActivity)) {
+                    android.util.Log.w(TAG, "🚫 No call detected - user likely dismissed dialer")
+                    android.util.Log.i(TAG, "   Resetting dialerActive to false")
+                    PrefsHelper.setDialerActive(this@LockScreenActivity, false)
+                } else {
+                    android.util.Log.i(TAG, "✅ Call was made, dialerActive properly managed by PhoneStateListener")
+                }
+            }, 3000) // 3 second grace period
         }
     }
 
     override fun onPause() {
         super.onPause()
-        android.util.Log.i(TAG, "onPause() - isInDialer=$isInDialer, locked=${PrefsHelper.isLocked(this)}")
+        android.util.Log.i(TAG, "onPause() - locked=${PrefsHelper.isLocked(this)}, dialerActive=${PrefsHelper.isDialerActive(this)}")
 
-        // CRITICAL: Completely skip relaunch if user is in dialer
-        if (isInDialer) {
-            android.util.Log.i(TAG, "User is in dialer - NOT relaunching lock screen")
+        // CRITICAL FIX: Don't relaunch if dialer is active!
+        if (PrefsHelper.isDialerActive(this)) {
+            android.util.Log.i(TAG, "✅ Dialer is active - NOT scheduling relaunch")
             return
         }
 
-        // Only relaunch if device is locked AND user is NOT in dialer
+        // Only relaunch if device is locked AND dialer is NOT active
         if (PrefsHelper.isLocked(this)) {
-            android.util.Log.i(TAG, "Device locked and user NOT in dialer - scheduling relaunch in 2s")
+            android.util.Log.i(TAG, "Device locked and dialer NOT active - scheduling relaunch in 2s")
             handler.postDelayed({
-                if (!isInDialer) {
+                // Double-check dialer is still not active before relaunching
+                if (!PrefsHelper.isDialerActive(this@LockScreenActivity)) {
                     android.util.Log.i(TAG, "Executing delayed relaunch")
                     bringToFront()
                 } else {
-                    android.util.Log.i(TAG, "Cancelled relaunch - user now in dialer")
+                    android.util.Log.i(TAG, "Cancelled relaunch - dialer became active")
                 }
             }, 2000) // 2 seconds delay for normal navigation blocking
         }
@@ -243,10 +226,10 @@ class LockScreenActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
-        android.util.Log.i(TAG, "onStop() - isInDialer=$isInDialer")
+        android.util.Log.i(TAG, "onStop()")
 
         // Don't do anything if user is in dialer
-        if (isInDialer) {
+        if (PrefsHelper.isDialerActive(this)) {
             android.util.Log.i(TAG, "User in dialer - allowing activity to stop")
         }
     }
@@ -295,5 +278,19 @@ class LockScreenActivity : AppCompatActivity() {
         }
 
         handler.removeCallbacksAndMessages(null)
+    }
+
+    private fun bringToFront() {
+        // Check if still locked
+        if (PrefsHelper.isLocked(this)) {
+            val intent = Intent(this, LockScreenActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                putExtra("LOCK_MESSAGE", PrefsHelper.getLockMessage(this@LockScreenActivity))
+            }
+            startActivity(intent)
+            android.util.Log.i(TAG, "Lock screen brought back to front")
+        }
     }
 }

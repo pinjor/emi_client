@@ -10,6 +10,7 @@ object PrefsHelper {
     private const val KEY_LOCK_TITLE = "lock_title"
     private const val KEY_LOCK_MSG = "lock_message"
     private const val KEY_LAST_HEARTBEAT = "last_heartbeat"
+    private const val KEY_DIALER_ACTIVE = "dialer_active" // New flag for dialer state
 
     private fun prefs(context: Context): SharedPreferences =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -44,5 +45,14 @@ object PrefsHelper {
 
     fun getLastHeartbeatTime(context: Context): Long {
         return prefs(context).getLong(KEY_LAST_HEARTBEAT, 0L)
+    }
+
+    // New methods for dialer state management
+    fun setDialerActive(context: Context, active: Boolean) {
+        prefs(context).edit().putBoolean(KEY_DIALER_ACTIVE, active).apply()
+    }
+
+    fun isDialerActive(context: Context): Boolean {
+        return prefs(context).getBoolean(KEY_DIALER_ACTIVE, false)
     }
 }
