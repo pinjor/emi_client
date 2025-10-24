@@ -68,6 +68,23 @@ data class LocationData(
     val timestamp: String
 )
 
+// -------------------------------
+// 📍 Periodic Location Tracking Model
+// -------------------------------
+data class PeriodicLocationRequest(
+    val device_id: String,
+    val latitude: Double,
+    val longitude: Double,
+    val accuracy: Double,
+    val recorded_at: String,
+    val metadata: LocationMetadata
+)
+
+data class LocationMetadata(
+    val battery_level: Int,
+    val network_type: String
+)
+
 
 // Retrofit API interface
 
@@ -76,6 +93,10 @@ interface ApiService {
     // Register the device with serial, imei, and FCM token
     @POST("devices/register")
     fun registerDevice(@Body req: DeviceRegisterRequest): Call<DeviceRegistrationResponse>
+
+    // Periodic location tracking endpoint
+    @POST("devices/location")
+    fun sendPeriodicLocation(@Body req: PeriodicLocationRequest): Call<ApiResponse>
 
     @POST("devices/command-response")
     fun sendLocationResponse(@Body req: LocationResponseRequest): Call<ApiResponse>
@@ -100,4 +121,3 @@ interface ApiService {
     @POST("devices/command/ack")
     fun ackCommand(@Body req: CommandAckRequest): Call<ApiResponse>
 }
-

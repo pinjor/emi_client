@@ -18,7 +18,8 @@ class PermissionManager(private val context: Context, private val adminReceiver:
         android.Manifest.permission.READ_PHONE_NUMBERS,
         android.Manifest.permission.POST_NOTIFICATIONS,
         android.Manifest.permission.ACCESS_FINE_LOCATION,
-        android.Manifest.permission.ACCESS_COARSE_LOCATION
+        android.Manifest.permission.ACCESS_COARSE_LOCATION,
+        android.Manifest.permission.ACCESS_BACKGROUND_LOCATION // For periodic location tracking
         // Add more dangerous permissions if needed
     )
 

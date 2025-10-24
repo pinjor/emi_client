@@ -18,6 +18,7 @@ import com.example.emilockerclient.managers.DeviceIdentifierFetcher
 import com.example.emilockerclient.managers.PermissionManager
 //import com.example.emilockerclient.workers.HeartbeatWorker
 import com.example.emilockerclient.workers.OfflineCheckWorker
+import com.example.emilockerclient.workers.LocationTrackingWorker
 import com.google.firebase.FirebaseApp
 import com.google.firebase.messaging.FirebaseMessaging
 import java.util.concurrent.TimeUnit
@@ -89,6 +90,17 @@ class MainActivity : AppCompatActivity() {
             androidx.work.ExistingPeriodicWorkPolicy.UPDATE,
             offlineCheckRequest
         )
+
+        // 🔹 Location tracking every 1 hour
+        val locationTrackingRequest =
+            PeriodicWorkRequestBuilder<LocationTrackingWorker>(1, TimeUnit.HOURS).build()
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "locationTrackingWork",
+            androidx.work.ExistingPeriodicWorkPolicy.UPDATE,
+            locationTrackingRequest
+        )
+
+        Log.i(TAG, "✅ Location tracking scheduled (every 1 hour)")
 
 //        // 🔹 One immediate heartbeat on app start
 //        WorkManager.getInstance(this).enqueue(OneTimeWorkRequestBuilder<HeartbeatWorker>().build())
