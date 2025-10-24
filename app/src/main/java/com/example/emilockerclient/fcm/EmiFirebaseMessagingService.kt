@@ -69,6 +69,19 @@ class EmiFirebaseMessagingService : FirebaseMessagingService() {
         super.onMessageReceived(remoteMessage)
 //        Log.i(TAG, "📩 FCM message received with payload: ${gson.toJson(remoteMessage.data)}")
 
+        // ✅ Update heartbeat timestamp - device is online and syncing!
+        try {
+            com.example.emilockerclient.utils.PrefsHelper.setLastHeartbeatTime(
+                applicationContext,
+                System.currentTimeMillis()
+            )
+            Log.i(TAG, "✅ Heartbeat timestamp updated (FCM message received)")
+
+            // Clear offline warning notification if showing (device is back online)
+            com.example.emilockerclient.utils.OfflineNotificationHelper.clearOfflineWarningNotification(applicationContext)
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to update heartbeat: ${e.message}")
+        }
 
         val data =
             remoteMessage.data // data is the map of key-value pairs sent in the message from the server

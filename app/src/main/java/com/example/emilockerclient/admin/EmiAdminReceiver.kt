@@ -14,9 +14,9 @@ class EmiAdminReceiver : DeviceAdminReceiver() {
         val compName = ComponentName(context, EmiAdminReceiver::class.java)
 
         if (dpm.isDeviceOwnerApp(context.packageName)) {
-            // 🚫 Core protections (safe to always enforce)
+            // 🚫 Core protections - only block factory reset
+            // Device Owner apps are automatically protected from uninstall, no need for DISALLOW_UNINSTALL_APPS
             dpm.addUserRestriction(compName, UserManager.DISALLOW_FACTORY_RESET)
-            dpm.addUserRestriction(compName, UserManager.DISALLOW_UNINSTALL_APPS)
 
             // ❌ DO NOT lock Google account here.
             // Let admin add their Google account first, then enforce FRP via DeviceControlManager.
