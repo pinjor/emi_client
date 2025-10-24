@@ -2,6 +2,7 @@
 package com.example.emilockerclient.managers
 
 import android.app.admin.DevicePolicyManager
+import android.app.admin.FactoryResetProtectionPolicy
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -174,7 +175,6 @@ class DeviceControlManager(private val context: Context) {
             Log.e(TAG, "toggleSelfVisibility failed: ${e.message}")
         }
     }
-
 
 
 

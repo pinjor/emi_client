@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:id="@+id/tv_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="status"
+            android:padding="8dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Enter account identifiers (comma separated). For dev testing emails are fine."
+            android:paddingTop="8dp" />
+
+        <EditText
+            android:id="@+id/et_accounts"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="test@gmail.com, other@gmail.com"
+            android:inputType="textEmailAddress"
+            android:padding="8dp" />
+
+        <Button
+            android:id="@+id/btn_apply_frp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Apply FRP"
+            android:layout_marginTop="12dp" />
+
+        <Button
+            android:id="@+id/btn_back"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Back"
+            android:layout_marginTop="8dp" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="16dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="IMPORTANT: Device must be Device Owner and accounts must already be added via Settings → Accounts."
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:textColor="#AA0000" />
+
+    </LinearLayout>
+</ScrollView>
