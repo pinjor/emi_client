@@ -86,18 +86,24 @@ class LockMonitorService : Service() {
 
         createNotificationChannel()
 
+        // Create a minimal, silent notification (required for foreground service)
+        // This notification is intentionally minimal and low-priority
+        // Silence is controlled by the channel (IMPORTANCE_MIN with no sound)
         val notification: Notification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Notification.Builder(this, CHANNEL_ID)
-                .setContentTitle("EMI Locker Active")
-                .setContentText("Device is locked due to payment overdue")
-                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle("EMI Locker")
+                .setContentText("Service running")
+                .setSmallIcon(android.R.drawable.ic_lock_idle_lock) // Use system lock icon (minimal)
                 .setOngoing(true)
+                .setShowWhen(false) // Don't show time
                 .build()
         } else {
+            @Suppress("DEPRECATION")
             Notification.Builder(this)
-                .setContentTitle("EMI Locker Active")
-                .setContentText("Device is locked due to payment overdue")
-                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle("EMI Locker")
+                .setContentText("Service running")
+                .setSmallIcon(android.R.drawable.ic_lock_idle_lock)
+                .setPriority(Notification.PRIORITY_MIN)
                 .build()
         }
 
@@ -131,10 +137,13 @@ class LockMonitorService : Service() {
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 "EMI Lock Monitor",
-                NotificationManager.IMPORTANCE_LOW
+                NotificationManager.IMPORTANCE_MIN // Minimal - only in expanded notification shade
             ).apply {
                 description = "Monitors and maintains device lock screen"
                 setShowBadge(false)
+                setSound(null, null) // No sound
+                enableLights(false) // No LED
+                enableVibration(false) // No vibration
             }
             manager.createNotificationChannel(channel)
         }

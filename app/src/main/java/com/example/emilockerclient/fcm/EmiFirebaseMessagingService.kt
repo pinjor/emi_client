@@ -1,6 +1,7 @@
 package com.example.emilockerclient.fcm
 
 import android.content.ComponentName
+import android.content.Context
 import android.util.Log
 import com.example.emilockerclient.admin.EmiAdminReceiver
 import com.example.emilockerclient.managers.DeviceIdentifierFetcher
@@ -25,7 +26,29 @@ class EmiFirebaseMessagingService : FirebaseMessagingService() {
         try {
             val adminReceiver = ComponentName(this, EmiAdminReceiver::class.java)
             val identifierFetcher = DeviceIdentifierFetcher(this, adminReceiver)
-            Log.i(TAG, "🔍 Fetching device identifiers for registration...")
+            val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as android.app.admin.DevicePolicyManager
+            val isDeviceOwner = dpm.isDeviceOwnerApp(packageName)
+
+            if (isDeviceOwner) {
+                // Device Owner Mode - Auto-register with auto-fetched identifiers
+                Log.i(TAG, "🔍 Device Owner Mode - Auto-fetching identifiers...")
+                registerDeviceOwnerMode(identifierFetcher, token)
+            } else {
+                // Admin Mode - Check if setup completed, use manually entered IMEI
+                Log.i(TAG, "⚙️ Admin Mode - Checking setup status...")
+                registerAdminMode(token)
+            }
+
+        } catch (e: Exception) {
+            Log.e(TAG, "💥 Error in onNewToken: ${e.message}", e)
+        }
+    }
+
+    /**
+     * Register device in Device Owner Mode (auto-fetch identifiers)
+     */
+    private fun registerDeviceOwnerMode(identifierFetcher: DeviceIdentifierFetcher, token: String) {
+        try {
             val serial = identifierFetcher.getSerialNumber()
             val imei = identifierFetcher.getImei(0) // Primary SIM IMEI
 
@@ -35,33 +58,81 @@ class EmiFirebaseMessagingService : FirebaseMessagingService() {
                 fcm_token = token
             )
 
-            Log.i(TAG, "📤 Registering device with payload: ${gson.toJson(req)}")
+            Log.i(TAG, "📤 Registering device (Device Owner Mode): ${gson.toJson(req)}")
 
             RetrofitClient.api.registerDevice(req)
-                .enqueue(object : Callback<DeviceRegistrationResponse> { // <-- Use new specific type
-                    override fun onResponse(call: Call<DeviceRegistrationResponse>, response: Response<DeviceRegistrationResponse>) {
+                .enqueue(object : Callback<DeviceRegistrationResponse> {
+                    override fun onResponse(
+                        call: Call<DeviceRegistrationResponse>,
+                        response: Response<DeviceRegistrationResponse>
+                    ) {
                         if (response.isSuccessful && response.body()?.success == true) {
-                            // Accessing the structured data is now safe!
                             val customerName = response.body()?.data?.device?.customer_name
                             val isLocked = response.body()?.data?.device?.device_status?.is_locked
                             val id = response.body()?.data?.device?.customer_id
-                            Log.i(TAG, "🆔 Registered to customer ID: $id")
-
-                            Log.i(TAG, "✅ Device registration successful! Customer: $customerName, Locked: $isLocked")
+                            Log.i(TAG, "✅ Device Owner registration successful!")
+                            Log.i(TAG, "🆔 Customer ID: $id, Name: $customerName, Locked: $isLocked")
                         } else {
-                            Log.w(TAG, "⚠️ Device registration failed: HTTP ${response.code()} → ${response.errorBody()?.string()}")
+                            Log.w(TAG, "⚠️ Device Owner registration failed: HTTP ${response.code()} → ${response.errorBody()?.string()}")
                         }
                     }
 
                     override fun onFailure(call: Call<DeviceRegistrationResponse>, t: Throwable) {
-                        Log.e(TAG, "❌ Device registration request failed: ${t.message}", t)
+                        Log.e(TAG, "❌ Device Owner registration request failed: ${t.message}", t)
                     }
                 })
 
         } catch (e: SecurityException) {
             Log.e(TAG, "🔒 Permission error while fetching device identifiers: ${e.message}")
         } catch (e: Exception) {
-            Log.e(TAG, "💥 Error preparing registration payload: ${e.message}", e)
+            Log.e(TAG, "💥 Error preparing Device Owner registration: ${e.message}", e)
+        }
+    }
+
+    /**
+     * Register device in Admin Mode (use manually entered IMEI)
+     */
+    private fun registerAdminMode(token: String) {
+        val setupPrefs = com.example.emilockerclient.utils.SetupPrefsHelper
+
+        // Check if registration already completed
+        if (setupPrefs.isRegistrationCompleted(this)) {
+            Log.i(TAG, "✅ Admin Mode: Already registered, updating token if needed")
+
+            // Get stored IMEI
+            val imei = setupPrefs.getRegisteredImei(this)
+            if (imei != null) {
+                // Re-register with new token
+                val req = DeviceRegisterRequest(
+                    serial_number = imei, // Using IMEI as identifier in Admin Mode
+                    imei1 = imei,
+                    fcm_token = token
+                )
+
+                Log.i(TAG, "📤 Updating FCM token (Admin Mode) for IMEI: $imei")
+
+                RetrofitClient.api.registerDevice(req)
+                    .enqueue(object : Callback<DeviceRegistrationResponse> {
+                        override fun onResponse(
+                            call: Call<DeviceRegistrationResponse>,
+                            response: Response<DeviceRegistrationResponse>
+                        ) {
+                            if (response.isSuccessful && response.body()?.success == true) {
+                                Log.i(TAG, "✅ Admin Mode: Token updated successfully")
+                                setupPrefs.setRegisteredFcmToken(applicationContext, token)
+                            } else {
+                                Log.w(TAG, "⚠️ Admin Mode: Token update failed: HTTP ${response.code()}")
+                            }
+                        }
+
+                        override fun onFailure(call: Call<DeviceRegistrationResponse>, t: Throwable) {
+                            Log.e(TAG, "❌ Admin Mode: Token update failed: ${t.message}")
+                        }
+                    })
+            }
+        } else {
+            Log.i(TAG, "⚠️ Admin Mode: Setup not completed yet, waiting for manual registration")
+            // Token will be used during manual registration in RegistrationActivity
         }
     }
 
@@ -96,30 +167,5 @@ class EmiFirebaseMessagingService : FirebaseMessagingService() {
         }else{
             Log.w(TAG, "⚠️ 'command' key missing or empty in FCM data payload: ${gson.toJson(data)}")
         }
-//        if (data.isEmpty()) {
-//            Log.w(TAG, "⚠️ Received FCM message with no data payload")
-//            return
-//        }
-//
-//        try {
-//            val cmdJson = data["command"] ?: data["cmd"] ?: data["payload"]
-//            if (cmdJson != null) {
-//                val cmd = gson.fromJson(cmdJson, ServerCommand::class.java)
-//                Log.i(TAG, "🧩 Parsed ServerCommand: ${gson.toJson(cmd)}")
-//                CommandHandler.handle(applicationContext, cmd)
-//            } else {
-//                val commandType = data["command"] ?: data["type"] ?: ""
-//                if (commandType.isNotBlank()) {
-//                    val cmd = ServerCommand(commandType, payload = data)
-//                    Log.i(TAG, "⚙️ Executing command (simple mode): ${gson.toJson(cmd)}")
-//                    CommandHandler.handle(applicationContext, cmd)
-//                } else {
-//                    Log.w(TAG, "⚠️ Unknown message structure, skipping: ${gson.toJson(data)}")
-//                }
-//            }
-//
-//        } catch (e: Exception) {
-//            Log.e(TAG, "💥 Failed to parse or handle command: ${e.message}", e)
-//        }
     }
 }

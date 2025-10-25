@@ -24,8 +24,8 @@ object CommandHandler {
         Log.i(TAG, "Handling command='$normalized' params=${gson.toJson(cmd.params)}")
 
         // Many commands change device state - require device owner
+        // NOTE: lock_device and unlock_device are NOT here because custom lock screen works in Admin Mode too
         val deviceOwnerRequired = setOf(
-            "lock_device", "unlock_device",
             "disable_camera", "enable_camera",
             "disable_bluetooth", "enable_bluetooth",
             "hide_app", "unhide_app",
@@ -124,31 +124,6 @@ object CommandHandler {
                     manager.rebootDevice()
                 }
 
-//                "reset_password" -> {
-//                    Log.i(TAG, "Resetting device password as per command.")
-//                    val pwd = cmd.getString("password")
-//                    if (pwd != null) manager.resetDevicePassword(pwd)
-//                    else {
-//                        reason = "missing_password"
-//                        status = "FAILED"
-//                    }
-//                }
-//
-//                "remove_password" -> {
-//                    Log.i(TAG, "Removing device password as per command.")
-//                    manager.clearDevicePassword()
-//                }
-//
-//                "set_wallpaper" -> {
-//                    Log.i(TAG, "Setting wallpaper as per command.")
-//                    val url = cmd.getString("image_url")
-//                    if (url != null) manager.setWallpaperFromUrl(url)
-//                    else {
-//                        reason = "missing_image_url"
-//                        status = "FAILED"
-//                    }
-//                }
-//
                 "remove_wallpaper" -> {
                     Log.i(TAG, "Removing wallpaper as per command.")
                     manager.removeWallpaper()
@@ -174,14 +149,14 @@ object CommandHandler {
 //                    }
 //                }
 
-                "request_location" -> {
-                    Log.i(TAG, "Requesting device location as per command.")
-                    // manager.requestLocation will fetch and (optionally) send back to server
-                    manager.requestLocation { locResult ->
-                        // optional: you could send location back as part of ack (not implemented by default)
-                        Log.i(TAG, "LOCATION RESULT: $locResult")
-                    }
-                }
+//                "request_location" -> {
+//                    Log.i(TAG, "Requesting device location as per command.")
+//                    // manager.requestLocation will fetch and (optionally) send back to server
+//                    manager.requestLocation { locResult ->
+//                        // optional: you could send location back as part of ack (not implemented by default)
+//                        Log.i(TAG, "LOCATION RESULT: $locResult")
+//                    }
+//                }
 
                 else -> {
 

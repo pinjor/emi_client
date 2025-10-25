@@ -71,4 +71,72 @@ class PermissionManager(private val context: Context, private val adminReceiver:
             ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
         }
     }
+
+    /**
+     * Check if a specific permission is granted
+     */
+    fun isPermissionGranted(permission: String): Boolean {
+        return ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
+    }
+
+    /**
+     * Check location permissions status
+     */
+    fun areLocationPermissionsGranted(): Boolean {
+        val fineLocation = ContextCompat.checkSelfPermission(
+            context,
+            android.Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+
+        val coarseLocation = ContextCompat.checkSelfPermission(
+            context,
+            android.Manifest.permission.ACCESS_COARSE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+
+        return fineLocation && coarseLocation
+    }
+
+    /**
+     * Check background location permission (Android 10+)
+     */
+    fun isBackgroundLocationGranted(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.ACCESS_BACKGROUND_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        } else {
+            true // Not needed on older versions
+        }
+    }
+
+    /**
+     * Check notification permission (Android 13+)
+     */
+    fun isNotificationPermissionGranted(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+        } else {
+            true // Not needed on older versions
+        }
+    }
+
+    /**
+     * Check if device admin is active
+     */
+    fun isDeviceAdminActive(): Boolean {
+        return dpm.isAdminActive(adminReceiver)
+    }
+
+    /**
+     * Get list of missing permissions
+     */
+    fun getMissingPermissions(): List<String> {
+        return REQUIRED_PERMISSIONS.filter {
+            ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED
+        }
+    }
 }

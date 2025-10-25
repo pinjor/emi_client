@@ -1,7 +1,7 @@
 {
   "android.app.extra.PROVISIONING_DEVICE_ADMIN_COMPONENT_NAME": "com.example.emilockerclient/.admin.EmiAdminReceiver",
   "android.app.extra.PROVISIONING_DEVICE_ADMIN_PACKAGE_DOWNLOAD_LOCATION": "https://api.imelocker.com/downloads/emi-locker-client.apk",
-  "android.app.extra.PROVISIONING_DEVICE_ADMIN_SIGNATURE_CHECKSUM": "6C:A7:1C:F9:7B:57:2D:6D:01:65:66:3E:0F:F2:8F:96:47:8C:48:32:B2:5C:C4:A7:F3:FE:0C:59:C9:F7:48:7E",
+  "android.app.extra.PROVISIONING_DEVICE_ADMIN_SIGNATURE_CHECKSUM": "E1:BC:07:03:DA:EC:6B:66:B7:CC:23:A9:A1:08:73:A0:8E:BB:ED:D5:57:35:7E:CA:3D:A6:1F:DC:66:A1:F6:0A",
   "android.app.extra.PROVISIONING_SKIP_ENCRYPTION": false,
   "android.app.extra.PROVISIONING_LEAVE_ALL_SYSTEM_APPS_ENABLED": true,
   "android.app.extra.PROVISIONING_ADMIN_EXTRAS_BUNDLE": {

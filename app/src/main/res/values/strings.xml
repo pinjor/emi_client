@@ -2,4 +2,29 @@
     <string name="app_name">ImeLocker</string>
     <string name="welcome_string">Welcome to ImeLocker!</string>
     <string name="app_description">IME client locker in dev mode for proper testing.</string>
+
+    <!-- Accessibility Service -->
+    <string name="accessibility_service_description">EMI Locker uses this service to monitor device activity and prevent unauthorized changes. This helps protect your device from unauthorized uninstallation or tampering.</string>
+
+    <!-- Setup Activity -->
+    <string name="setup_welcome_title">Welcome to EMI Locker</string>
+    <string name="setup_admin_mode">⚙️ Admin Mode</string>
+    <string name="setup_continue">Continue Setup</string>
+
+    <!-- Registration Activity -->
+    <string name="registration_title">📝 Device Registration</string>
+    <string name="registration_subtitle">Register this device with your IMEI number</string>
+    <string name="registration_imei_label">IMEI Number</string>
+    <string name="registration_imei_hint">Enter IMEI (15 digits)</string>
+    <string name="registration_button">Register Device</string>
+
+    <!-- Permission Setup Activity -->
+    <string name="permission_title">🔐 Grant Permissions</string>
+    <string name="permission_subtitle">Tap each button below to grant the required permissions</string>
+    <string name="permission_complete">Complete Setup</string>
+    <string name="permission_location">Location Access</string>
+    <string name="permission_background_location">Background Location</string>
+    <string name="permission_notification">Notifications</string>
+    <string name="permission_device_admin">Device Admin</string>
+    <string name="permission_overlay">Display Over Apps</string>
 </resources>

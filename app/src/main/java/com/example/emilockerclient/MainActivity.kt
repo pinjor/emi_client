@@ -35,7 +35,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
 
         dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
         compName = ComponentName(this, EmiAdminReceiver::class.java)
@@ -43,7 +42,31 @@ class MainActivity : AppCompatActivity() {
         identifierFetcher = DeviceIdentifierFetcher(this, compName)
         permissionManager = PermissionManager(this, compName)
 
-        // 🔹 Check if device was provisioned via QR code
+        // 🔹 Determine device mode and route accordingly
+        val isDeviceOwner = dpm.isDeviceOwnerApp(packageName)
+
+        if (isDeviceOwner) {
+            // ✅ DEVICE OWNER MODE - Existing flow (unchanged)
+            handleDeviceOwnerMode()
+        } else {
+            // ⚙️ ADMIN MODE - New flow for non-device owner
+            handleAdminMode()
+        }
+    }
+
+    /**
+     * Handle Device Owner Mode - Existing logic (unchanged)
+     */
+    private fun handleDeviceOwnerMode() {
+        setContentView(R.layout.activity_main)
+
+        Log.i(TAG, "📱 Device Owner Mode - Full Management")
+        com.example.emilockerclient.utils.SetupPrefsHelper.setDeviceMode(
+            this,
+            com.example.emilockerclient.utils.SetupPrefsHelper.MODE_DEVICE_OWNER
+        )
+
+        // Existing Device Owner logic
         val prefs = getSharedPreferences("emi_prefs", MODE_PRIVATE)
         val isProvisioned = prefs.getBoolean(DeviceProvisioningActivity.KEY_IS_PROVISIONED, false)
         val deviceIdFromQR = prefs.getString(DeviceProvisioningActivity.KEY_DEVICE_ID, null)
@@ -147,6 +170,50 @@ class MainActivity : AppCompatActivity() {
 //        WorkManager.getInstance(this).enqueue(OneTimeWorkRequestBuilder<HeartbeatWorker>().build())
     }
 
+    /**
+     * Handle Admin Mode - New logic for non-device owner
+     */
+    private fun handleAdminMode() {
+        Log.i(TAG, "⚙️ Admin Mode - Limited Management")
+        com.example.emilockerclient.utils.SetupPrefsHelper.setDeviceMode(
+            this,
+            com.example.emilockerclient.utils.SetupPrefsHelper.MODE_ADMIN
+        )
+
+        // Check if setup is completed
+        val isSetupCompleted = com.example.emilockerclient.utils.SetupPrefsHelper.isSetupCompleted(this)
+
+        if (!isSetupCompleted) {
+            // Redirect to setup flow
+            Log.i(TAG, "Setup not completed, redirecting to SetupActivity")
+            val intent = Intent(this, SetupActivity::class.java)
+            startActivity(intent)
+            finish()
+            return
+        }
+
+        // Setup completed - show main UI with status
+        setContentView(R.layout.activity_main)
+
+        Log.i(TAG, "✅ Admin Mode setup completed")
+
+        // Initialize Firebase
+        FirebaseApp.initializeApp(this)
+
+        // Check permission health
+        checkPermissionHealthAdminMode()
+
+        // Setup limited workers (location tracking only)
+        setupAdminModeWorkers()
+
+        // Show status toast
+        Toast.makeText(
+            this,
+            "⚙️ Running in Admin Mode\nLimited features available",
+            Toast.LENGTH_LONG
+        ).show()
+    }
+
 
     private fun retrieveDeviceId(idName: String, fetcher: () -> String) {
         if (!deviceManager.isDeviceOwner()) {
@@ -170,5 +237,55 @@ class MainActivity : AppCompatActivity() {
                 Toast.LENGTH_LONG
             ).show()
         }
+    }
+
+    /**
+     * Check permission health in Admin Mode
+     */
+    private fun checkPermissionHealthAdminMode() {
+        val missingPermissions = permissionManager.getMissingPermissions()
+
+        if (missingPermissions.isNotEmpty()) {
+            Log.w(TAG, "⚠️ Some permissions are missing: $missingPermissions")
+            Toast.makeText(
+                this,
+                "⚠️ Warning: Some permissions are missing. App functionality may be limited.",
+                Toast.LENGTH_LONG
+            ).show()
+        } else {
+            Log.i(TAG, "✅ All permissions granted in Admin Mode")
+        }
+
+        // Check device admin status
+        if (!dpm.isAdminActive(compName)) {
+            Log.w(TAG, "⚠️ Device Admin is not active!")
+            Toast.makeText(
+                this,
+                "⚠️ Warning: Device Admin not active. Lock screen may not work properly.",
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+
+    /**
+     * Setup limited workers for Admin Mode (location tracking only)
+     */
+    private fun setupAdminModeWorkers() {
+        // Only setup location tracking worker if permissions are granted
+        if (permissionManager.areLocationPermissionsGranted()) {
+            val locationTrackingRequest =
+                PeriodicWorkRequestBuilder<LocationTrackingWorker>(1, TimeUnit.HOURS).build()
+            WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+                "locationTrackingWork",
+                androidx.work.ExistingPeriodicWorkPolicy.UPDATE,
+                locationTrackingRequest
+            )
+            Log.i(TAG, "✅ Location tracking scheduled (Admin Mode)")
+        } else {
+            Log.w(TAG, "⚠️ Location permissions not granted, skipping location tracking")
+        }
+
+        // Note: Offline check worker is not needed in Admin Mode since
+        // the app can be uninstalled anyway
     }
 }
