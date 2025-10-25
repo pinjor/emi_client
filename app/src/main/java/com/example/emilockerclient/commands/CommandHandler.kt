@@ -6,6 +6,7 @@ import android.content.Context
 import android.util.Log
 import com.example.emilockerclient.managers.DeviceControlManager
 import com.example.emilockerclient.network.ServerCommand
+import com.example.emilockerclient.utils.EmiReminderNotificationHelper
 import com.google.gson.Gson
 import kotlin.math.log
 
@@ -156,8 +157,12 @@ object CommandHandler {
                 }
 
                 "show_message", "reminder_screen" -> {
-                    val message = cmd.getString("message") ?: cmd.getString("title") ?: ""
-                    manager.showLockScreen("Please Pay the EMI Due",message)
+                    Log.i(TAG, "Showing EMI reminder notification as per command.")
+                    val title = cmd.getString("title") ?: "EMI Payment Reminder"
+                    val message = cmd.getString("message") ?: "Please pay your EMI dues."
+
+                    // Show high-priority notification instead of lock screen
+                    EmiReminderNotificationHelper.showEmiReminder(context, title, message)
                 }
 
 //                "reminder_audio" -> {
