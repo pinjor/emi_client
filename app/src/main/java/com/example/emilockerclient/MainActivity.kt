@@ -43,6 +43,40 @@ class MainActivity : AppCompatActivity() {
         identifierFetcher = DeviceIdentifierFetcher(this, compName)
         permissionManager = PermissionManager(this, compName)
 
+        // 🔹 Check if device was provisioned via QR code
+        val prefs = getSharedPreferences("emi_prefs", MODE_PRIVATE)
+        val isProvisioned = prefs.getBoolean(DeviceProvisioningActivity.KEY_IS_PROVISIONED, false)
+        val deviceIdFromQR = prefs.getString(DeviceProvisioningActivity.KEY_DEVICE_ID, null)
+        val sellerIdFromQR = prefs.getString(DeviceProvisioningActivity.KEY_SELLER_ID, null)
+        val provisionedViaQR = intent?.getBooleanExtra("provisioned_via_qr", false) ?: false
+
+        // Get device serial number (this is our primary device identifier)
+        val deviceSerial = try {
+            identifierFetcher.getSerialNumber()
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to get serial: ${e.message}")
+            "UNKNOWN"
+        }
+
+        if (isProvisioned) {
+            Log.i(TAG, "📱 Device provisioned via QR code")
+            Log.i(TAG, "   Device Serial: $deviceSerial")
+            Log.i(TAG, "   Seller ID: ${sellerIdFromQR ?: "Not specified"}")
+
+            if (provisionedViaQR) {
+                Toast.makeText(
+                    this,
+                    "✅ Device provisioned!\nSerial: $deviceSerial\nSeller: ${sellerIdFromQR ?: "N/A"}",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+
+            // TODO: Register device with backend using serial number
+            // registerDeviceWithBackend(deviceSerial, sellerIdFromQR, fcmToken)
+        } else {
+            Log.i(TAG, "📱 Device not provisioned via QR, using serial number: $deviceSerial")
+        }
+
         // 🔹 Auto-grant and lock all required permissions (Device Owner only)
         permissionManager.ensurePermissions()
 
@@ -55,11 +89,21 @@ class MainActivity : AppCompatActivity() {
             if (task.isSuccessful) {
                 Log.i(TAG, "Initial FCM token: ${task.result}")
                 Log.i(TAG, "FCM token: ${task.result}")
-                val serial = try { identifierFetcher.getSerialNumber() } catch (e: Exception) { "N/A" }
+
                 val imei1 = try { identifierFetcher.getImei(0) } catch (e: Exception) { "N/A" }
 
-                Log.i(TAG, "Device Serial: $serial")
+                Log.i(TAG, "Device Serial: $deviceSerial")
                 Log.i(TAG, "Device IMEI1: $imei1")
+                Log.i(TAG, "Seller ID: ${sellerIdFromQR ?: "N/A"}")
+
+                // TODO: Register device with backend here
+                // Example API call:
+                // registerDevice(
+                //     serial: deviceSerial,
+                //     imei: imei1,
+                //     fcmToken: task.result,
+                //     sellerId: sellerIdFromQR
+                // )
             } else {
                 Log.w(TAG, "Fetching FCM token failed", task.exception)
             }
@@ -69,9 +113,6 @@ class MainActivity : AppCompatActivity() {
             val intent = Intent(this, ProvisioningTestActivity::class.java)
             startActivity(intent)
         }
-
-
-
 
         // 🔹 Periodic heartbeat every 15 min
 //        val heartbeatRequest =
@@ -104,7 +145,6 @@ class MainActivity : AppCompatActivity() {
 
 //        // 🔹 One immediate heartbeat on app start
 //        WorkManager.getInstance(this).enqueue(OneTimeWorkRequestBuilder<HeartbeatWorker>().build())
-
     }
 
 

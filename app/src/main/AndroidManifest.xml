@@ -113,6 +113,17 @@
             android:exported="false"
             android:label="FRP Provisioning Test" />
 
+        <!-- QR Code Provisioning Activity - Handles device provisioning via QR code -->
+        <activity
+            android:name=".DeviceProvisioningActivity"
+            android:exported="true"
+            android:permission="android.permission.BIND_DEVICE_ADMIN">
+            <intent-filter>
+                <action android:name="android.app.action.PROVISION_MANAGED_DEVICE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
         <activity
             android:name=".MainActivity"
             android:exported="true">
