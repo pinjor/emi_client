@@ -1,13 +1,13 @@
 <resources>
-    <string name="app_name">ImeLocker</string>
-    <string name="welcome_string">Welcome to ImeLocker!</string>
-    <string name="app_description">IME client locker in dev mode for proper testing.</string>
+    <string name="app_name">AI Locker</string>
+    <string name="welcome_string">Welcome to AI Locker!</string>
+    <string name="app_description">AI locker in dev mode for proper testing.</string>
 
     <!-- Accessibility Service -->
-    <string name="accessibility_service_description">EMI Locker uses this service to monitor device activity and prevent unauthorized changes. This helps protect your device from unauthorized uninstallation or tampering.</string>
+    <string name="accessibility_service_description">AI Locker uses this service to monitor device activity and prevent unauthorized changes. This helps protect your device from unauthorized uninstallation or tampering.</string>
 
     <!-- Setup Activity -->
-    <string name="setup_welcome_title">Welcome to EMI Locker</string>
+    <string name="setup_welcome_title">Welcome to AI Locker</string>
     <string name="setup_admin_mode">⚙️ Admin Mode</string>
     <string name="setup_continue">Continue Setup</string>
 
