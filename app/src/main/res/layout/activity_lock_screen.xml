@@ -88,7 +88,7 @@
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- Seller Contact Section -->
+        <!-- Seller Contact Information (Display Only - No Buttons) -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -106,10 +106,20 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="📞 Contact Seller"
+                    android:text="📞 Seller Contact Information"
                     android:textColor="#4CAF50"
                     android:textSize="18sp"
                     android:textStyle="bold"
+                    android:gravity="center"
+                    android:layout_marginBottom="16dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Please contact your seller to unlock this device:"
+                    android:textColor="#BDBDBD"
+                    android:textSize="14sp"
+                    android:gravity="center"
                     android:layout_marginBottom="16dp" />
 
                 <TextView
@@ -118,8 +128,9 @@
                     android:layout_height="wrap_content"
                     android:text="EMI Mobile Store"
                     android:textColor="#E0E0E0"
-                    android:textSize="16sp"
+                    android:textSize="18sp"
                     android:textStyle="bold"
+                    android:gravity="center"
                     android:layout_marginBottom="8dp" />
 
                 <TextView
@@ -128,34 +139,23 @@
                     android:layout_height="wrap_content"
                     android:text="+8801600457087"
                     android:textColor="#90CAF9"
-                    android:textSize="15sp"
-                    android:layout_marginBottom="16dp" />
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:layout_marginBottom="8dp" />
 
-                <!-- Call Button (WhatsApp removed) -->
-                <Button
-                    android:id="@+id/btnCallSeller"
+                <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="📱 Call Seller"
-                    android:textColor="#FFFFFF"
-                    android:backgroundTint="#4CAF50"
-                    android:textSize="16sp"
-                    android:padding="16dp" />
+                    android:text="Call this number from another phone to resolve your payment."
+                    android:textColor="#9E9E9E"
+                    android:textSize="13sp"
+                    android:gravity="center"
+                    android:fontFamily="sans-serif-light" />
 
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- Emergency Call Button -->
-        <Button
-            android:id="@+id/btnEmergency"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="🚨 Emergency Call (999)"
-            android:textColor="#FFFFFF"
-            android:backgroundTint="#F44336"
-            android:textSize="16sp"
-            android:padding="16dp"
-            android:layout_marginBottom="16dp" />
 
         <!-- Footer Info -->
         <TextView

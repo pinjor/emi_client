@@ -39,18 +39,7 @@ class LockMonitorService : Service() {
             try {
                 // Check if device is still in locked state
                 if (PrefsHelper.isLocked(this@LockMonitorService)) {
-
-                    // 🔑 KEY CHECK: Don't relaunch if user is in dialer/making calls
-                    if (PrefsHelper.isDialerActive(this@LockMonitorService)) {
-                        Log.i(TAG, "✅ Dialer is active - skipping lock screen relaunch")
-                        // Schedule next check and return early
-                        if (isMonitoring) {
-                            handler.postDelayed(this, CHECK_INTERVAL)
-                        }
-                        return
-                    }
-
-                    // User is NOT in dialer - relaunch lock screen
+                    // Device is locked - relaunch lock screen
                     val title = PrefsHelper.getLockTitle(this@LockMonitorService)
                     val message = PrefsHelper.getLockMessage(this@LockMonitorService)
                     val lockIntent = Intent(this@LockMonitorService, LockScreenActivity::class.java).apply {
