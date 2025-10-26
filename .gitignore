@@ -14,4 +14,13 @@
 .cxx
 local.properties
 
+# Keystore files - NEVER commit these!
+*.jks
+*.keystore
+keystore.properties
+
+# Generated QR provisioning JSON (contains sensitive info)
+qr_provisioning.json
+
+# System context
 /app/src/main/java/com/example/emilockerclient/system_context.txt

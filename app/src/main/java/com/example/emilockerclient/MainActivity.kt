@@ -68,9 +68,9 @@ class MainActivity : AppCompatActivity() {
 
         // Existing Device Owner logic
         val prefs = getSharedPreferences("emi_prefs", MODE_PRIVATE)
-        val isProvisioned = prefs.getBoolean(DeviceProvisioningActivity.KEY_IS_PROVISIONED, false)
-        val deviceIdFromQR = prefs.getString(DeviceProvisioningActivity.KEY_DEVICE_ID, null)
-        val sellerIdFromQR = prefs.getString(DeviceProvisioningActivity.KEY_SELLER_ID, null)
+        val isProvisioned = prefs.getBoolean("is_provisioned", false)
+        val deviceIdFromQR = prefs.getString("provisioned_device_id", null)
+        val sellerIdFromQR = prefs.getString("provisioned_seller_id", null)
         val provisionedViaQR = intent?.getBooleanExtra("provisioned_via_qr", false) ?: false
 
         // Get device serial number (this is our primary device identifier)

@@ -51,9 +51,10 @@ class EmiAdminReceiver : DeviceAdminReceiver() {
      * This is the callback after device becomes Device Owner via QR code.
      *
      * We use this to:
-     * 1. Auto-grant all required permissions
-     * 2. Initialize Firebase for FCM
-     * 3. Launch MainActivity to complete setup
+     * 1. Extract and save custom data from QR code (device_id, seller_id)
+     * 2. Auto-grant all required permissions
+     * 3. Initialize Firebase for FCM
+     * 4. Launch MainActivity to complete setup
      */
     override fun onProfileProvisioningComplete(context: Context, intent: Intent) {
         super.onProfileProvisioningComplete(context, intent)
@@ -73,18 +74,53 @@ class EmiAdminReceiver : DeviceAdminReceiver() {
         Log.i(TAG, "✅ Confirmed: App is Device Owner")
 
         try {
-            // 1. Auto-grant all required permissions
+            // 1. Extract and save custom data from QR code's admin extras bundle
+            val adminExtras = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                intent.getParcelableExtra(
+                    DevicePolicyManager.EXTRA_PROVISIONING_ADMIN_EXTRAS_BUNDLE,
+                    android.os.PersistableBundle::class.java
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                intent.getParcelableExtra(DevicePolicyManager.EXTRA_PROVISIONING_ADMIN_EXTRAS_BUNDLE)
+            }
+
+            if (adminExtras != null) {
+                Log.i(TAG, "📦 Admin extras bundle received")
+
+                val prefs = context.getSharedPreferences("emi_prefs", Context.MODE_PRIVATE)
+                val deviceId = adminExtras.getString("device_id", "")
+                val sellerId = adminExtras.getString("seller_id", "")
+                val serverUrl = adminExtras.getString("server_url", "")
+
+                Log.i(TAG, "📝 Saving provisioning data:")
+                Log.i(TAG, "   Device ID: $deviceId")
+                Log.i(TAG, "   Seller ID: $sellerId")
+                Log.i(TAG, "   Server URL: $serverUrl")
+
+                prefs.edit().apply {
+                    putString("provisioned_device_id", deviceId)
+                    putString("provisioned_seller_id", sellerId)
+                    putString("provisioned_server_url", serverUrl)
+                    putBoolean("is_provisioned", true)
+                    apply()
+                }
+            } else {
+                Log.w(TAG, "⚠️ No admin extras bundle found")
+            }
+
+            // 2. Auto-grant all required permissions
             Log.i(TAG, "🔐 Auto-granting permissions...")
             val permissionManager = PermissionManager(context, compName)
             permissionManager.ensurePermissions()
             Log.i(TAG, "✅ Permissions granted")
 
-            // 2. Add core device restrictions
+            // 3. Add core device restrictions
             Log.i(TAG, "🔒 Adding device restrictions...")
             dpm.addUserRestriction(compName, UserManager.DISALLOW_FACTORY_RESET)
             Log.i(TAG, "✅ Factory reset disabled")
 
-            // 3. Initialize Firebase
+            // 4. Initialize Firebase
             Log.i(TAG, "🔥 Initializing Firebase...")
             FirebaseApp.initializeApp(context)
 
@@ -97,7 +133,7 @@ class EmiAdminReceiver : DeviceAdminReceiver() {
                 }
             }
 
-            // 4. Launch MainActivity to complete setup
+            // 5. Launch MainActivity to complete setup
             Log.i(TAG, "🚀 Launching MainActivity...")
             val launchIntent = Intent(context, MainActivity::class.java).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)

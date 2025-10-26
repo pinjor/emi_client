@@ -126,7 +126,7 @@
                     android:id="@+id/tvSellerPhone"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="+880 1712-345678"
+                    android:text="+8801600457087"
                     android:textColor="#90CAF9"
                     android:textSize="15sp"
                     android:layout_marginBottom="16dp" />

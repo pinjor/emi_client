@@ -132,11 +132,11 @@ class LockScreenActivity : AppCompatActivity() {
 
         // TODO: Get seller info from backend/preferences (hardcoded for now)
         findViewById<TextView>(R.id.tvSellerName).text = "EMI Mobile Store"
-        findViewById<TextView>(R.id.tvSellerPhone).text = "+880 1712-345678"
+        findViewById<TextView>(R.id.tvSellerPhone).text = "+8801600457087"
 
         // Call Seller button
         findViewById<Button>(R.id.btnCallSeller).setOnClickListener {
-            val phoneNumber = "+8801712345678" // TODO: Get from backend
+            val phoneNumber = "+8801600457087" // TODO: Get from backend
             openDialer(phoneNumber)
         }
 

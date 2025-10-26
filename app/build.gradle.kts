@@ -12,19 +12,32 @@ android {
         applicationId = "com.example.emilockerclient"
         minSdk = 30
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 4
+        versionName = "4.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     signingConfigs {
         create("release") {
-            // For now using debug keystore - replace with production keystore later
-            storeFile = file("${System.getProperty("user.home")}/.android/debug.keystore")
-            storePassword = "android"
-            keyAlias = "androiddebugkey"
-            keyPassword = "android"
+            // Signing will be configured via Android Studio's "Generate Signed Bundle/APK" dialog
+            // or you can configure it here manually:
+            // storeFile = file("/path/to/your/keystore.jks")
+            // storePassword = "your_store_password"
+            // keyAlias = "your_key_alias"
+            // keyPassword = "your_key_password"
+
+//            optional but good practice soo...
+            storeFile = file("/home/lazy/.keystores/imelockerclient.jks")
+            storePassword = "imelocker"
+            keyAlias = "key0"
+            keyPassword = "imelocker"
+
+            // Enable V1 signing for better compatibility with older Android versions
+            enableV1Signing = true
+            enableV2Signing = true
+            enableV3Signing = true
+            enableV4Signing = true
         }
     }
 
@@ -35,6 +48,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // Signing config will be applied during "Generate Signed Bundle/APK"
             signingConfig = signingConfigs.getByName("release")
         }
     }
