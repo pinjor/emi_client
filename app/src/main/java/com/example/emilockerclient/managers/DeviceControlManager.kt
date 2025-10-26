@@ -3,6 +3,9 @@ package com.example.emilockerclient.managers
 
 import android.app.admin.DevicePolicyManager
 import android.app.admin.FactoryResetProtectionPolicy
+import android.accounts.AccountManager
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -19,6 +22,7 @@ import com.example.emilockerclient.services.LocationService
 import com.example.emilockerclient.services.LockMonitorService
 import com.example.emilockerclient.ui.LockScreenActivity
 import com.example.emilockerclient.utils.PrefsHelper
+import androidx.core.app.NotificationCompat
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -501,4 +505,153 @@ class DeviceControlManager(private val context: Context) {
 //        }
 //    }
 
+    /**
+     * Apply Factory Reset Protection (FRP) with Google accounts found on device.
+     * This protects the device even after factory reset via recovery mode.
+     *
+     * Requirements:
+     * - App must be Device Owner
+     * - At least one Google account must be added to device
+     *
+     * Also locks account management to prevent account removal.
+     */
+    fun applyFrpLock() {
+        if (!isDeviceOwner()) {
+            Log.w(TAG, "❌ Cannot apply FRP: app is not Device Owner")
+            return
+        }
+
+        try {
+            // Step 1: Get all Google accounts from device
+            val accountManager = AccountManager.get(context)
+            val accounts = accountManager.accounts
+
+            // Filter for Google accounts (type "com.google")
+            val googleAccounts = accounts.filter { account ->
+                account.type == "com.google"
+            }
+
+            if (googleAccounts.isEmpty()) {
+                Log.w(TAG, "⚠️ No Google accounts found on device. FRP cannot be applied.")
+                Log.w(TAG, "   Admin must add a Google account first via Settings → Accounts")
+                return
+            }
+
+            // Step 2: Extract account emails
+            val accountEmails = googleAccounts.map { it.name }
+            Log.i(TAG, "📱 Found ${accountEmails.size} Google account(s): ${accountEmails.joinToString(", ")}")
+
+            // Step 3: Create and apply FRP policy
+            val frpPolicy = FactoryResetProtectionPolicy.Builder()
+                .setFactoryResetProtectionEnabled(true)
+                .setFactoryResetProtectionAccounts(accountEmails)
+                .build()
+
+            dpm.setFactoryResetProtectionPolicy(compName, frpPolicy)
+            Log.i(TAG, "✅ FRP policy applied with accounts: ${accountEmails.joinToString(", ")}")
+
+            // Step 4: Lock Google account management specifically (not all accounts)
+            try {
+                dpm.setAccountManagementDisabled(compName, "com.google", true)
+                Log.i(TAG, "✅ Google account management disabled (user cannot remove/modify Google accounts)")
+                Log.i(TAG, "   → Other accounts (WhatsApp, Facebook, etc.) can still be added/removed")
+            } catch (e: Exception) {
+                Log.w(TAG, "⚠️ setAccountManagementDisabled failed: ${e.message}")
+            }
+
+            Log.i(TAG, "🔒 FRP Lock applied successfully!")
+            Log.i(TAG, "   → Device is now protected even after factory reset")
+            Log.i(TAG, "   → User cannot remove Google accounts (other accounts not restricted)")
+
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Failed to apply FRP lock: ${e.message}", e)
+        }
+    }
+
+    /**
+     * Remove Factory Reset Protection (FRP) and unlock account management.
+     * This allows user to remove admin Google account and add their own.
+     *
+     * Typically called when customer pays off EMI completely.
+     */
+    fun removeFrpLock() {
+        if (!isDeviceOwner()) {
+            Log.w(TAG, "❌ Cannot remove FRP: app is not Device Owner")
+            return
+        }
+
+        try {
+            Log.i(TAG, "🔓 Removing FRP protection...")
+
+            // Step 1: Disable FRP policy
+            val frpPolicy = FactoryResetProtectionPolicy.Builder()
+                .setFactoryResetProtectionEnabled(false)
+                .build()
+
+            dpm.setFactoryResetProtectionPolicy(compName, frpPolicy)
+            Log.i(TAG, "✅ FRP policy disabled")
+
+            // Step 2: Unlock Google account management specifically
+            try {
+                dpm.setAccountManagementDisabled(compName, "com.google", false)
+                Log.i(TAG, "✅ Google account management enabled (user can now remove/modify Google accounts)")
+            } catch (e: Exception) {
+                Log.w(TAG, "⚠️ setAccountManagementDisabled(false) failed: ${e.message}")
+            }
+
+            // Step 3: Show notification to user
+            showFrpUnlockNotification()
+
+            Log.i(TAG, "🔓 FRP Lock removed successfully!")
+            Log.i(TAG, "   → User can now remove admin Google account")
+            Log.i(TAG, "   → User can add their personal Google account")
+
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Failed to remove FRP lock: ${e.message}", e)
+        }
+    }
+
+    /**
+     * Show notification to user after FRP is unlocked.
+     * Informs them they can now remove admin account and add personal account.
+     */
+    private fun showFrpUnlockNotification() {
+        try {
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+            // Create notification channel for Android O+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val channel = NotificationChannel(
+                    "frp_unlock_channel",
+                    "FRP Unlock Notifications",
+                    NotificationManager.IMPORTANCE_HIGH
+                ).apply {
+                    description = "Notifications when FRP protection is removed"
+                }
+                notificationManager.createNotificationChannel(channel)
+            }
+
+            // Build notification
+            val notification = NotificationCompat.Builder(context, "frp_unlock_channel")
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setContentTitle("🔓 Device Protection Removed")
+                .setContentText("You can now remove the admin Google account and sign in with your personal account.")
+                .setStyle(NotificationCompat.BigTextStyle()
+                    .bigText("✅ FRP Protection has been removed!\n\n" +
+                            "You can now:\n" +
+                            "• Go to Settings → Accounts\n" +
+                            "• Remove the admin Google account\n" +
+                            "• Add your personal Google account\n\n" +
+                            "Your device is now fully yours!"))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true)
+                .build()
+
+            notificationManager.notify(9999, notification)
+            Log.i(TAG, "✅ FRP unlock notification shown to user")
+
+        } catch (e: Exception) {
+            Log.w(TAG, "⚠️ Failed to show FRP unlock notification: ${e.message}")
+        }
+    }
 }

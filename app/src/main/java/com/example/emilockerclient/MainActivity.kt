@@ -132,10 +132,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        if (dpm.isDeviceOwnerApp(packageName)) {
-            val intent = Intent(this, ProvisioningTestActivity::class.java)
-            startActivity(intent)
-        }
 
         // 🔹 Periodic heartbeat every 15 min
 //        val heartbeatRequest =

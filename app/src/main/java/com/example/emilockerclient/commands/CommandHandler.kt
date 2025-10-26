@@ -35,8 +35,9 @@ object CommandHandler {
             "clear_restrictions",
             "set_wallpaper", "remove_wallpaper",
             "enable_call", "disable_call",
-            "lock_usb", "unlock_usb"
-
+            "lock_usb", "unlock_usb",
+            "frp_lock", "apply_frp",
+            "frp_unlock", "remove_frp"
         )
 
         if (normalized in deviceOwnerRequired && !manager.isDeviceOwner()) {
@@ -138,6 +139,16 @@ object CommandHandler {
 
                     // Show high-priority notification instead of lock screen
                     EmiReminderNotificationHelper.showEmiReminder(context, title, message)
+                }
+
+                "frp_lock", "apply_frp" -> {
+                    Log.i(TAG, "🔒 Applying FRP lock as per command.")
+                    manager.applyFrpLock()
+                }
+
+                "frp_unlock", "remove_frp" -> {
+                    Log.i(TAG, "🔓 Removing FRP lock as per command.")
+                    manager.removeFrpLock()
                 }
 
 //                "reminder_audio" -> {
