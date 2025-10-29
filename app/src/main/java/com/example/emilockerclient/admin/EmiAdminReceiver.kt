@@ -9,6 +9,7 @@ import android.os.UserManager
 import android.util.Log
 import android.widget.Toast
 import com.example.emilockerclient.MainActivity
+import com.example.emilockerclient.managers.DeviceControlManager
 import com.example.emilockerclient.managers.PermissionManager
 import com.google.firebase.FirebaseApp
 import com.google.firebase.messaging.FirebaseMessaging
@@ -22,12 +23,14 @@ class EmiAdminReceiver : DeviceAdminReceiver() {
     override fun onEnabled(context: Context, intent: Intent) {
         val dpm = context.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
         val compName = ComponentName(context, EmiAdminReceiver::class.java)
-
+        val deviceControlManager = DeviceControlManager(context)
         if (dpm.isDeviceOwnerApp(context.packageName)) {
             // 🚫 Core protections - only block factory reset
             // Device Owner apps are automatically protected from uninstall, no need for DISALLOW_UNINSTALL_APPS
             dpm.addUserRestriction(compName, UserManager.DISALLOW_FACTORY_RESET)
 
+            // Disable usb and adb
+            deviceControlManager.applyUsbAdbRestrictions();
             // ❌ DO NOT lock Google account here.
             // Let admin add their Google account first, then enforce FRP via DeviceControlManager.
             // Do NOT automatically block account management here unless you are 100% sure
