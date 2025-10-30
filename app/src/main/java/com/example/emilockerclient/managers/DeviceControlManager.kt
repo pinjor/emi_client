@@ -339,6 +339,10 @@ class DeviceControlManager(private val context: Context) {
             } catch (_: Exception) {}
 
             Log.i(TAG, "applyUsbAdbRestrictions complete (best-effort).")
+
+            // 🔐 Save state for persistence after reboot
+            com.example.emilockerclient.utils.PrefsHelper.setUsbLocked(context, true)
+            Log.i(TAG, "✅ USB locked state saved")
         } catch (e: Exception) {
             Log.e(TAG, "applyUsbAdbRestrictions failed: ${e.message}")
         }
@@ -416,6 +420,10 @@ class DeviceControlManager(private val context: Context) {
             }
 
             Log.i(TAG, "clearUsbAdbRestrictions complete (best-effort).")
+
+            // 🔓 Clear saved state
+            com.example.emilockerclient.utils.PrefsHelper.setUsbLocked(context, false)
+            Log.i(TAG, "✅ USB unlocked state saved")
         } catch (e: Exception) {
             Log.e(TAG, "clearUsbAdbRestrictions failed: ${e.message}")
         }

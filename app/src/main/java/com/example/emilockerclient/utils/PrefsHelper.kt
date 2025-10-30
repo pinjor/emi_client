@@ -11,6 +11,7 @@ object PrefsHelper {
     private const val KEY_LOCK_MSG = "lock_message"
     private const val KEY_LAST_HEARTBEAT = "last_heartbeat"
     private const val KEY_DIALER_ACTIVE = "dialer_active" // New flag for dialer state
+    private const val KEY_USB_LOCKED = "usb_locked" // USB/ADB restrictions state
 
     private fun prefs(context: Context): SharedPreferences =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -54,5 +55,14 @@ object PrefsHelper {
 
     fun isDialerActive(context: Context): Boolean {
         return prefs(context).getBoolean(KEY_DIALER_ACTIVE, false)
+    }
+
+    // USB/ADB lock state management
+    fun setUsbLocked(context: Context, locked: Boolean) {
+        prefs(context).edit().putBoolean(KEY_USB_LOCKED, locked).apply()
+    }
+
+    fun isUsbLocked(context: Context): Boolean {
+        return prefs(context).getBoolean(KEY_USB_LOCKED, false)
     }
 }

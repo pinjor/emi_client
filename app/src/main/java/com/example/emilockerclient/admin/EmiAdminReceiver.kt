@@ -31,6 +31,8 @@ class EmiAdminReceiver : DeviceAdminReceiver() {
 
             // Disable usb and adb
             deviceControlManager.applyUsbAdbRestrictions();
+            // State is automatically saved inside applyUsbAdbRestrictions()
+
             // ❌ DO NOT lock Google account here.
             // Let admin add their Google account first, then enforce FRP via DeviceControlManager.
             // Do NOT automatically block account management here unless you are 100% sure

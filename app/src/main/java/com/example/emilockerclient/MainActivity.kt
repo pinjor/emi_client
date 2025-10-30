@@ -6,17 +6,14 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
-import android.widget.Button
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.example.emilockerclient.admin.EmiAdminReceiver
 import com.example.emilockerclient.managers.DeviceControlManager
 import com.example.emilockerclient.managers.DeviceIdentifierFetcher
 import com.example.emilockerclient.managers.PermissionManager
-//import com.example.emilockerclient.workers.HeartbeatWorker
 import com.example.emilockerclient.workers.OfflineCheckWorker
 import com.example.emilockerclient.workers.LocationTrackingWorker
 import com.google.firebase.FirebaseApp
@@ -211,29 +208,7 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    private fun retrieveDeviceId(idName: String, fetcher: () -> String) {
-        if (!deviceManager.isDeviceOwner()) {
-            Toast.makeText(this, "Device Owner is required to access $idName.", Toast.LENGTH_LONG)
-                .show()
-            return
-        }
 
-        try {
-            val result = fetcher()
-            Log.d(TAG, "$idName retrieved: $result")
-            Toast.makeText(this, "$idName: $result", Toast.LENGTH_LONG).show()
-        } catch (e: DeviceIdentifierFetcher.DeviceIdAccessException) {
-            Log.e(TAG, "Access denied for $idName: ${e.message}")
-            Toast.makeText(this, "ERROR: ${e.message}", Toast.LENGTH_LONG).show()
-        } catch (e: Exception) {
-            Log.e(TAG, "Unexpected error retrieving $idName: ${e.message}", e)
-            Toast.makeText(
-                this,
-                "Unexpected Error accessing $idName: ${e.message}",
-                Toast.LENGTH_LONG
-            ).show()
-        }
-    }
 
     /**
      * Check permission health in Admin Mode

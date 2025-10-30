@@ -29,8 +29,13 @@ class BootReceiver : BroadcastReceiver() {
 
         val manager = DeviceControlManager(context)
 
-        // 1. 🔐 Re-apply USB & ADB restrictions
-//        manager.disableUSBDataTransfer()
+        // 1. 🔐 Re-apply USB & ADB restrictions if they were previously enabled
+        if (PrefsHelper.isUsbLocked(context)) {
+            Log.i("BootReceiver", "🔐 Re-applying USB/ADB restrictions after reboot...")
+            manager.applyUsbAdbRestrictions()
+        } else {
+            Log.i("BootReceiver", "ℹ️ USB/ADB restrictions were not previously enabled, skipping.")
+        }
 
         // 2. 🔒 Restore lock screen if previously locked
         if (PrefsHelper.isLocked(context)) {
