@@ -1,26 +1,32 @@
+# Gradle
+.gradle/
+build/
+app/build/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Android Studio / IntelliJ
+.idea/
 *.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+
+# Local configuration
 local.properties
+.DS_Store
 
 # Keystore files - NEVER commit these!
 *.jks
 *.keystore
 keystore.properties
 
-# Generated QR provisioning JSON (contains sensitive info)
-qr_provisioning.json
+# Build artifacts
+*.apk
+*.aab
 
-# System context
+# Logs and temp
+*.log
+*.tmp
+
+# Sensitive generated files
+qr_provisioning.json
 /app/src/main/java/com/example/emilockerclient/system_context.txt
