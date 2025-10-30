@@ -22,16 +22,15 @@ android {
         create("release") {
             // Signing will be configured via Android Studio's "Generate Signed Bundle/APK" dialog
             // or you can configure it here manually:
-            // storeFile = file("/path/to/your/keystore.jks")
+            // storeFile = file("C:/Users/YourUsername/keystores/emi-release.jks")
             // storePassword = "your_store_password"
             // keyAlias = "your_key_alias"
             // keyPassword = "your_key_password"
-
-//            optional but good practice soo...
-            storeFile = file("/home/lazy/.keystores/imelockerclient.jks")
-            storePassword = "imelocker"
-            keyAlias = "key0"
-            keyPassword = "imelocker"
+            
+            storeFile = file("../keystores/emi-release.jks")
+            storePassword = "emilocker2024"
+            keyAlias = "emi_release"
+            keyPassword = "emilocker2024"
 
             // Enable V1 signing for better compatibility with older Android versions
             enableV1Signing = true
@@ -48,7 +47,6 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // Signing config will be applied during "Generate Signed Bundle/APK"
             signingConfig = signingConfigs.getByName("release")
         }
     }
