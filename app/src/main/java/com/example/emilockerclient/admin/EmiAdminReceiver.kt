@@ -90,10 +90,11 @@ class EmiAdminReceiver : DeviceAdminReceiver() {
                 intent.getParcelableExtra(DevicePolicyManager.EXTRA_PROVISIONING_ADMIN_EXTRAS_BUNDLE)
             }
 
+            val prefs = context.getSharedPreferences("emi_prefs", Context.MODE_PRIVATE)
+            
             if (adminExtras != null) {
                 Log.i(TAG, "📦 Admin extras bundle received")
 
-                val prefs = context.getSharedPreferences("emi_prefs", Context.MODE_PRIVATE)
                 val deviceId = adminExtras.getString("device_id", "")
                 val sellerId = adminExtras.getString("seller_id", "")
                 val serverUrl = adminExtras.getString("server_url", "")
@@ -111,7 +112,14 @@ class EmiAdminReceiver : DeviceAdminReceiver() {
                     apply()
                 }
             } else {
-                Log.w(TAG, "⚠️ No admin extras bundle found")
+                Log.w(TAG, "⚠️ No admin extras bundle found in intent")
+                // Still mark as provisioned since we're now Device Owner
+                // This handles edge cases where bundle might not be accessible
+                prefs.edit().apply {
+                    putBoolean("is_provisioned", true)
+                    apply()
+                }
+                Log.i(TAG, "✅ Marked as provisioned without admin extras")
             }
 
             // 2. Auto-grant all required permissions
@@ -140,20 +148,26 @@ class EmiAdminReceiver : DeviceAdminReceiver() {
 
             // 5. Launch MainActivity to complete setup
             Log.i(TAG, "🚀 Launching MainActivity...")
-            val launchIntent = Intent(context, MainActivity::class.java).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                putExtra("provisioned_via_qr", true)
+            try {
+                val launchIntent = Intent(context, MainActivity::class.java).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                    putExtra("provisioned_via_qr", true)
+                }
+                context.startActivity(launchIntent)
+                
+                Toast.makeText(
+                    context,
+                    "✅ EMI Locker provisioned successfully!",
+                    Toast.LENGTH_LONG
+                ).show()
+                
+                Log.i(TAG, "🎉 Post-provisioning setup completed successfully!")
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Failed to launch MainActivity: ${e.message}", e)
+                // Still mark as provisioned even if MainActivity fails
+                Log.i(TAG, "✅ Provisioning succeeded but activity launch failed")
             }
-            context.startActivity(launchIntent)
-
-            Toast.makeText(
-                context,
-                "✅ EMI Locker provisioned successfully!",
-                Toast.LENGTH_LONG
-            ).show()
-
-            Log.i(TAG, "🎉 Post-provisioning setup completed successfully!")
 
         } catch (e: Exception) {
             Log.e(TAG, "❌ Error during post-provisioning setup: ${e.message}", e)

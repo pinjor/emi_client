@@ -4,6 +4,9 @@
   "android.app.extra.PROVISIONING_DEVICE_ADMIN_SIGNATURE_CHECKSUM": "0A:7D:81:7E:E5:CC:16:DA:41:ED:BB:A8:7A:91:72:64:1C:F0:28:1D:F9:23:CD:E8:11:C0:E1:07:6B:FD:29:D8",
   "android.app.extra.PROVISIONING_SKIP_ENCRYPTION": true,
   "android.app.extra.PROVISIONING_LEAVE_ALL_SYSTEM_APPS_ENABLED": true,
+  "android.app.extra.PROVISIONING_WIFI_SSID": "YOUR_WIFI_NAME",
+  "android.app.extra.PROVISIONING_WIFI_PASSWORD": "YOUR_WIFI_PASSWORD",
+  "android.app.extra.PROVISIONING_WIFI_SECURITY_TYPE": "WPA",
   "android.app.extra.PROVISIONING_ADMIN_EXTRAS_BUNDLE": {
     "device_id": "65",
     "seller_id": "118"

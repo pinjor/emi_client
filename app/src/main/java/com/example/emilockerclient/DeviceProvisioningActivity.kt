@@ -41,8 +41,25 @@ class DeviceProvisioningActivity : Activity() {
 
         Log.i(TAG, "✅ Provisioning activity started")
         Log.i(TAG, "Intent action: ${intent?.action}")
+        Log.i(TAG, "Intent: ${intent}")
+        
+        // Check if app is already Device Owner (prevent re-provisioning)
+        val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+        val isAlreadyDeviceOwner = dpm.isDeviceOwnerApp(packageName)
+        
+        Log.i(TAG, "Device Owner status: $isAlreadyDeviceOwner")
+        Log.i(TAG, "Package name: $packageName")
+        
+        if (isAlreadyDeviceOwner) {
+            Log.w(TAG, "⚠️ App is already Device Owner. Re-provisioning may cause conflicts.")
+            Log.w(TAG, "⚠️ Returning RESULT_OK to allow system to handle gracefully")
+            // Return OK to avoid system errors, but don't save data again
+            setResult(RESULT_OK)
+            finish()
+            return
+        }
 
-        // Extract admin extras bundle from provisioning QR code
+        // Extract admin extras bundle to verify it's present
         val adminExtras = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
             intent?.getParcelableExtra(
                 DevicePolicyManager.EXTRA_PROVISIONING_ADMIN_EXTRAS_BUNDLE,
@@ -54,12 +71,20 @@ class DeviceProvisioningActivity : Activity() {
         }
 
         if (adminExtras != null) {
-            Log.i(TAG, "📦 Admin extras bundle received")
-            saveProvisioningData(adminExtras)
+            Log.i(TAG, "📦 Admin extras bundle received with ${adminExtras.size()} items")
+            // Log keys in the bundle
+            adminExtras.keySet()?.forEach { key ->
+                Log.i(TAG, "   Key: $key = ${adminExtras.getString(key, "N/A")}")
+            }
         } else {
-            Log.w(TAG, "⚠️ No admin extras bundle found in provisioning intent")
+            Log.w(TAG, "⚠️ No admin extras bundle found - this is normal for provisioning")
         }
-
+        
+        // Note: We do NOT save provisioning data here
+        // The data will be extracted and saved in EmiAdminReceiver.onProfileProvisioningComplete()
+        // This avoids conflicts and ensures data is saved only after Device Owner is set
+        Log.i(TAG, "📦 Admin extras bundle will be processed after Device Owner is set")
+        
         // Return success to continue provisioning
         // Android will now complete the provisioning process and set app as Device Owner
         setResult(RESULT_OK)
@@ -68,32 +93,4 @@ class DeviceProvisioningActivity : Activity() {
         finish()
     }
 
-    /**
-     * Extract and save custom data from QR code
-     * This data will be used after provisioning completes
-     */
-    private fun saveProvisioningData(extras: PersistableBundle) {
-        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-
-        // Extract custom data from QR code
-        val deviceId = extras.getString("device_id", "")
-        val sellerId = extras.getString("seller_id", "")
-        val serverUrl = extras.getString("server_url", "")
-
-        Log.i(TAG, "📝 Saving provisioning data:")
-        Log.i(TAG, "   Device ID: $deviceId")
-        Log.i(TAG, "   Seller ID: $sellerId")
-        Log.i(TAG, "   Server URL: $serverUrl")
-
-        // Save to SharedPreferences for later use
-        prefs.edit().apply {
-            putString(KEY_DEVICE_ID, deviceId)
-            putString(KEY_SELLER_ID, sellerId)
-            putString(KEY_SERVER_URL, serverUrl)
-            putBoolean(KEY_IS_PROVISIONED, true)
-            apply()
-        }
-
-        Log.i(TAG, "✅ Provisioning data saved successfully")
-    }
 }
